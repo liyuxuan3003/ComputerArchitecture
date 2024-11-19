@@ -1,0 +1,146 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}
+
+\foreach \x in {0,1,2,...,31}
+{
+    \path (0,\fpeval{-\x*(0.6+0.0)}) coordinate (x\x LA);
+    \path (4,\fpeval{-\x*(0.6+0.0)-0.6}) coordinate (x\x RB);
+    \path (x\x LA|-x\x RB) coordinate (x\x LB);
+    \path (x\x LA-|x\x RB) coordinate (x\x RA);
+    \path ($(x\x LA)!0.5!(x\x RB)$) coordinate (x\x CC);
+    \path (x\x CC|-x\x LA) coordinate (x\x CA);
+    \path (x\x CC|-x\x LB) coordinate (x\x CB);
+    \path (x\x CC-|x\x LB) coordinate (x\x LC);
+    \path (x\x CC-|x\x RB) coordinate (x\x RC);
+}
+
+\foreach \x/\t in {0/zero}
+{
+    \fill[black!20!white] (x\x LA) rectangle (x\x RB);
+    \path (x\x CC) node {\ttfamily \t};
+}
+
+\foreach \x/\t in {1/ra}
+{
+    \fill[orange!20!white] (x\x LA) rectangle(x\x RB);
+    \path (x\x CC) node {\ttfamily \t};
+}
+
+\foreach \x/\t in {2/sp,3/gp,4/tp}
+{
+    \fill[yellow!20!white] (x\x LA) rectangle (x\x RB);
+    \path (x\x CC) node {\ttfamily \t};
+}
+
+\foreach \x/\t in {5/t0,6/t1,7/t2,28/t3,29/t4,30/t5,31/t6}
+{
+    \fill[blue!20!white] (x\x LA) rectangle (x\x RB);
+    \path (x\x CC) node {\ttfamily \t};
+}
+
+\foreach \x/\t in {8/s0(fp),9/s1,18/s2,19/s3,20/s4,21/s5,22/s6,23/s7,24/s8,25/s9,26/s10,27/s11}
+{
+    \fill[green!20!white] (x\x LA) rectangle (x\x RB);
+    \path (x\x CC) node {\ttfamily \t};
+}
+
+\foreach \x/\t in {10/a0,11/a1,12/a2,13/a3,14/a4,15/a5,16/a6,17/a7}
+{
+    \fill[red!20!white] (x\x LA) rectangle (x\x RB);
+    \path (x\x CC) node {\ttfamily \t};
+}
+
+\foreach \x in {0,1,2,...,31}
+{
+    \draw (x\x LA) rectangle (x\x RB);
+    \path (x\x LC) ++(-2.5,0) node[right] {\ttfamily x\x};
+}
+
+\foreach \a in {0,1}
+{
+    \foreach \b in {0,1}
+    {
+        \foreach \c in {0,1}
+        {
+            \foreach \d in {0,1}
+            {
+                \foreach \e in {0,1}
+                {
+                    \def\x{\fpeval{\a*16+\b*8+\c*4+\d*2+\e*1}}
+                    \path (x\x LC) node[left] {\ttfamily (\a\b\c\d\e)};
+                }
+            }
+        }
+    }
+}
+
+\foreach \x in {0,1,2,3,4,5,8,10,18,28}
+{
+    \draw[dashed,thin] (x\x RA) ++(+0.1,0) -- ++(7,0);
+    \draw[dashed,thin] (x\x LA) ++(-0.1,0) -- ++(-2.5,0);
+}
+
+\foreach \x in {31}
+{
+    \draw[dashed,thin] (x\x RB) ++(+0.1,0) -- ++(7,0);
+    \draw[dashed,thin] (x\x LB) ++(-0.1,0) -- ++(-2.5,0);
+}
+
+\def\ofsgroup{0.365}
+
+\path (x8RC) ++ (\ofsgroup,0) node[jump crossing,very thin] (J1) {};
+\path (x10RC) ++ (\ofsgroup,0) node[jump crossing,very thin] (J2) {};
+\path (x11RC) ++ (\ofsgroup,0) node[jump crossing,very thin] (J3) {}; 
+
+\def\ofsgrouplabel{0.1cm}
+
+\foreach \x/\y/\t/\c in {5/7/Temporary Registers/blue,18/27/Saved Registers/green,28/31/Temporary Registers/blue}
+{
+    \draw[very thin,latex-latex] ($(x\x RA)+(\ofsgroup,0)$) -- node[right=\ofsgrouplabel,draw=\c,thick,fill=\c!10!white] (g\x) {\t} ($(x\y RB)+(\ofsgroup,0)$);
+}
+
+\foreach \x\y\t/\c in {8/9/Saved Registers/green}
+{
+    \draw[very thin,latex-] ($(x\x RA)+(\ofsgroup,0)$) -- (J1.north);
+    \draw[very thin,-latex] (J1.south) -- node[right=\ofsgrouplabel,draw=\c,thick,fill=\c!10!white] (g\x) {\t} ($(x\y RB)+(\ofsgroup,0)$);
+}
+
+\foreach \x\y\t/\c in {10/17/Argument Registers/red}
+{
+    \draw[very thin,latex-] ($(x\x RA)+(\ofsgroup,0)$) -- (J2.north);
+    \draw[very thin] (J2.south) -- (J3.north);
+    \draw[very thin,-latex] (J3.south) -- node[right=\ofsgrouplabel,draw=\c,thick,fill=\c!10!white] (g\x) {\t} ($(x\y RB)+(\ofsgroup,0)$);
+}
+
+\draw [very thin,latex-latex] ($(g8.east)+(0.05,0)$) -- ++(2,0) |- ($(g18.east)+(0.05,0)$);
+\draw [very thin,latex-latex] ($(g5.east)+(0.05,0)$) -- ++(2.5,0) |- ($(g28.east)+(0.05,0)$);
+
+
+
+\foreach \x in {0,1,2,3,4}
+{
+    \draw[-latex,very thin] ($(x\x RC)+(0.05,0)$) -- ++(2.25,0);
+}
+
+\foreach \x/\j in {8/J1,10/J2,11/J3}
+{
+    \draw[very thin] ($(x\x RC)+(0.05,0)$) -- (\j.west);
+    \draw[-latex,very thin] (\j.east) -- ($(x\x RC)+(2.3,0)$);
+}
+
+\def\nlena{2.3cm}
+\path (x0RC) node[right=\nlena] {Constant Zero};
+\path (x1RC) node[right=\nlena] {Return Address};
+\path (x2RC) node[right=\nlena] {Stack Pointer};
+\path (x3RC) node[right=\nlena] {Global Pointer};
+\path (x4RC) node[right=\nlena] {Thread Pointer};
+\path (x8RC) node[right=\nlena] {Frame Pointer};
+\path (x10RC) node[right=\nlena] {Return Values};
+\path (x11RC) node[right=\nlena] {Return Values};
+
+\draw[ultra thin] ($(x31LB)+(-2.75,-0.25)$) rectangle ($(x0RA)+(7.5,0.25)$);
+
+\end{tikzpicture}
+\end{document}

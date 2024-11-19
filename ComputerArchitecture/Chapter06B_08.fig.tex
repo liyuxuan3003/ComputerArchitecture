@@ -1,0 +1,86 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}[scale=0.97]
+
+\def\xbit{0.47}
+\def\xlen{32*\xbit}
+\def\ylen{1.2}
+\def\yspace{2.1}
+\def\ytick{0.15}
+\def\ytext{0.7}
+
+\foreach \y in {0}
+{
+    \draw[thick] (0,-\y*\yspace) coordinate (LB\y) rectangle ++ (\xlen,\ylen) coordinate (RA\y);
+    \path (LB\y|-RA\y) coordinate (LA\y);
+    \path (LB\y-|RA\y) coordinate (RB\y);
+    \path ($(LA\y)!0.5!(LB\y)$) coordinate (LC\y);
+    \path ($(RA\y)!0.5!(RB\y)$) coordinate (RC\y);
+    \draw ($(LA\y)+(0,-\xbit)$) coordinate (LT\y) -- ($(RA\y)+(0,-\xbit)$) coordinate (RT\y);
+    \foreach \x in {0,1,...,32}
+    {
+        \draw ($(LB\y)+(\xbit*\x,0)$) -- ++(0,-\ytick);
+        \draw ($(LA\y)+(\xbit*\x,0)$) -- ++(0,-\xbit);
+    }
+    \foreach \x in {0,1,...,31}
+    {
+        \path ($(LB\y)+(\xbit*0.5+\xbit*\x,0)$) node[below,font=\tiny\ttfamily] {\fpeval{32-\x-1}};
+    }
+}
+
+\foreach \y/\bl/\br/\t/\c in {%
+0/0/20/imm[31:12]/green,%
+0/20/24/rd/red,%
+0/25/31/opcode/yellow%
+}%
+{
+    \draw[black,fill=\c!20!white] ($(LT\y)+(\xbit*\bl,0)$) rectangle node[font=\ttfamily] {\t} ($(LB\y)+(\xbit*\br+\xbit,0)$);
+}
+
+\foreach \y/\bl/\br/\ia in {%
+0/0/19/31%
+}%
+{
+    \ifthenelse{\equal{\bl}{\br}}
+    {\foreach \b in {\bl}}
+    {\foreach \b in {\bl,\fpeval{\bl+1},...,\br}}
+    {
+        \draw ($(LT\y)+(\xbit*\b+\xbit*0.5,\xbit*0.5)$) node[font=\footnotesize\ttfamily,red] {\fpeval{\ia-(\b-\bl)}};
+    }
+}
+
+\foreach \y/\ta/\tb in {%
+0/U/Upper%
+}
+{
+    \path ($(LC\y)+(-1.35,0)$) node[font=\large\bfseries,draw=black,thick,fill=black!10!white,minimum width=2cm,minimum height=0.75cm] {\ta -Type} node[below=0.35cm] {(\tb)};
+}
+
+\foreach \yt/\t in{%
+    0/{Field of Instruction Type: \texttt{opcode}},%
+    1/{Field of Operand: \texttt{imm,rd}},%
+    2/{Immediate Bits (Encode/Actual): 20/32},
+    3/{Immediate Type: --},
+    4/{Instruction: \texttt{lui,auipc}}
+}%
+{
+    \path ($(LB0)+(0,-\yt*\ytext-0.8)$) node[right] {\t};
+}
+
+\foreach \yt/\t/\n/\na/\nb/\nc/\nd/\ne/\nf/\ng in{%
+    0/LUI/55/0/1/1/0/1/1/1,%
+    1/AUIPC/23/0/0/1/0/1/1/1%
+}%
+{
+    \path ($(LB0)+(\xbit*25.5,-\yt*\ytext-0.8)$) node[left=0.1cm] {\textbf{\t}(\n): };
+    \foreach \b/\nx in {0/\na,1/\nb,2/\nc,3/\nd,4/\ne,5/\nf,6/\ng}
+    {
+        \path ($(LB0)+(\xbit*\b+\xbit*25.5,-\yt*\ytext-0.8)$) node[font=\ttfamily] {\nx};
+    }
+}
+
+\draw ($(LB0)+(-2.75,-4.2)$) rectangle ($(RA0)+(0.5,0.5)$);
+
+\end{tikzpicture}
+\end{document}

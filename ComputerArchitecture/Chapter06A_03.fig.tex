@@ -1,0 +1,32 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}
+
+\def\lh{0.75}
+\def\lw{6}
+    
+\foreach \x/\a/\t in {0/00/{li s0,0},1/04/{addi s0,s0,1},2/08/{addi s0,s0,2},3/0C/{addi s0,s0,4}}
+{
+    \draw (0,\x*\lh-\lh/2) coordinate (MLB\x) rectangle node {\texttt{\t}} ++(\lw,\lh) coordinate (MRA\x);
+    \path (MLB\x|-MRA\x) coordinate (MLA\x);
+    \path (MLB\x-|MRA\x) coordinate (MRB\x);
+
+    \path ($(MLA\x)!0.5!(MLB\x)$) coordinate (MLC\x);
+    \path ($(MRA\x)!0.5!(MRB\x)$) coordinate (MRC\x);
+
+    \path ($(MLA\x)!0.5!(MRA\x)$) coordinate (MCA\x);
+    \path ($(MLB\x)!0.5!(MRB\x)$) coordinate (MCB\x);
+
+    \path ($(MLC\x)!0.5!(MRC\x)$) coordinate (M\x);
+
+    \path (MLC\x) node[left] {\texttt{0x000100\a}};
+}
+
+\draw[latex-] ($(MRC0)+(0.5,0)$) -- ($(MRC0)+(1.5,0)$) node[right] {\texttt{pc}};
+\draw[latex-,gray] ($(MRC1)+(0.5,0)$) -- ($(MRC1)+(1.5,0)$) node[right] {\texttt{pc=pc+4}};
+
+\draw[ultra thin] (-2.5,-1.0) rectangle (9.7,3.0);
+
+\end{tikzpicture}
+\end{document}

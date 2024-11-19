@@ -1,0 +1,1 @@
+addi s0,zero,0x02A      # s0=0x00000_02A

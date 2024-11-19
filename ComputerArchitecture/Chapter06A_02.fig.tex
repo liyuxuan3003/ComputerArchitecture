@@ -1,0 +1,64 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}
+
+\def\lh{0.75}
+\def\lw{6}
+    
+\foreach \x/\a/\t in {0/00/42,1/04/43,2/08/44,3/0C/45,4/10/46}
+{
+    \draw (0,\x*\lh-\lh/2) coordinate (MLB\x) rectangle node {\texttt{m[\x]=\t}} ++(\lw,\lh) coordinate (MRA\x);
+    \path (MLB\x|-MRA\x) coordinate (MLA\x);
+    \path (MLB\x-|MRA\x) coordinate (MRB\x);
+
+    \path ($(MLA\x)!0.5!(MLB\x)$) coordinate (MLC\x);
+    \path ($(MRA\x)!0.5!(MRB\x)$) coordinate (MRC\x);
+
+    \path ($(MLA\x)!0.5!(MRA\x)$) coordinate (MCA\x);
+    \path ($(MLB\x)!0.5!(MRB\x)$) coordinate (MCB\x);
+
+    \path ($(MLC\x)!0.5!(MRC\x)$) coordinate (M\x);
+
+    \path (MLC\x) node[left] {\texttt{0x000100\a}};
+}
+
+\draw[latex-] ($(MRC0)+(0.5,0)$) -- ($(MRC0)+(1.5,0)$) node[right] {\texttt{r0}};
+
+\path ($(MRC0)+(3.5,0)$) node[left] {\texttt{0(r0)}};
+\path ($(MRC1)+(3.5,0)$) node[left] {\texttt{4(r0)}};
+\path ($(MRC2)+(3.5,0)$) node[left] {\texttt{8(r0)}};
+
+\path ($(MLB0)+(0,-1.0)$) coordinate (W1) -- ($(MRB0)+(0,-1.0)$) coordinate (W2);
+\path ($(MLB0)+(0,-2.0)$) coordinate (H1) -- ($(MRB0)+(0,-2.0)$) coordinate (H2);
+\path ($(MLB0)+(0,-3.0)$) coordinate (B1) -- ($(MRB0)+(0,-3.0)$) coordinate (B2);
+
+\foreach \x/\t in {W/0.00,W/1.00,H/0.00,H/0.50,H/1.00,B/0.00,B/0.25,B/0.50,B/0.75,B/1.00}
+{
+    \draw ($(\x 1)!\t!(\x 2)$) ++ (0,0.15) -- ++(0,-0.3);
+}
+
+\foreach \xa/\xb in {0.00/1.00}
+{
+    \draw[thin,latex-latex] ($(W1)!\xa!(W2)$) -- node[above] {$\SI{32}{bit}$}  ($(W1)!\xb!(W2)$);
+}
+
+\foreach \xa/\xb/\t in {0.00/0.50/2,0.50/1.00/0}
+{
+    \draw[thin,latex-latex] ($(H1)!\xa!(H2)$) -- node[above] {$\SI{16}{bit}$} node[below] {\texttt{+\t}}  ($(H1)!\xb!(H2)$);
+}
+
+\foreach \xa/\xb/\t in {0.00/0.25/3,0.25/0.50/2,0.50/0.75/1,0.75/1.00/0}
+{
+    \draw[thin,latex-latex] ($(B1)!\xa!(B2)$) -- node[above] {$\SI{8}{bit}$} node[below] {\texttt{+\t}} ($(B1)!\xb!(B2)$);
+}
+
+\foreach \x/\t in {W1/Word,H1/Half,B1/Byte}
+{
+    \path (\x) ++ (-1.15,0) node[draw,minimum height=0.65cm,minimum width=1.5cm,fill=black!10!white] {\t};
+}
+
+\draw[ultra thin] (-2.5,-4) rectangle (9.7,3.6);
+
+\end{tikzpicture}
+\end{document}

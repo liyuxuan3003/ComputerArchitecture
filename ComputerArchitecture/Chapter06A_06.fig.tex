@@ -1,0 +1,60 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}
+
+\def\lh{0.75}
+\def\lw{6}
+    
+\foreach \x/\a/\t/\c/\tl in {0/20000/{?}/black/{},1/1FFFC/{s2(main)}/red/{func1/callee},2/1FFF8/{s1(main)}/red/{func1/callee},3/1FFF4/{s0(main)}/red/{func1/callee}}
+{
+    \draw[fill=\c!10!white] (0,-\x*\lh-\lh/2) coordinate (MLB\x) rectangle node {\texttt{\t}} ++(\lw,\lh) coordinate (MRA\x);
+    \path (MLB\x|-MRA\x) coordinate (MLA\x);
+    \path (MLB\x-|MRA\x) coordinate (MRB\x);
+
+    \path ($(MLA\x)!0.5!(MLB\x)$) coordinate (MLC\x);
+    \path ($(MRA\x)!0.5!(MRB\x)$) coordinate (MRC\x);
+
+    \path ($(MLA\x)!0.5!(MRA\x)$) coordinate (MCA\x);
+    \path ($(MLB\x)!0.5!(MRB\x)$) coordinate (MCB\x);
+
+    \path ($(MLC\x)!0.5!(MRC\x)$) coordinate (M\x);
+
+    \path (MLC\x) node[left] {\texttt{0x000\a}};
+    \path (MLC\x) node[right] {\tiny\texttt{\tl}};
+}
+
+\foreach \x in {0,3}
+{
+    \draw[latex-] (MRC\x) ++(0.2,0) coordinate (SPLtemp\x) -- ++ (1.5,0) coordinate (SPRtemp\x) node[right] {\texttt{sp\vphantom{t}}};
+
+    \path (SPLtemp\x) ++(0.4,0) coordinate (SPL\x); 
+    \path (SPRtemp\x) ++(-0.2,0) coordinate (SPR\x); 
+
+    \foreach \p in {SPL,SPR}
+    {
+        \path (\p\x) ++ (0,0.05) coordinate (\p A\x);
+        \path (\p\x) ++ (0,-0.05) coordinate (\p B\x);
+    }
+}
+
+\foreach \xa/\xb/\n in {0/3}
+{
+    \draw[very thin,dashed,gray,-latex] (SPLB\xa) -- node[above,rotate=90,font=\ttfamily\tiny] {addi} node[below,rotate=90,font=\ttfamily\tiny] {sp,-\n} (SPLA\xb);
+    \draw[very thin,dashed,gray,-latex] (SPRA\xb) -- node[above,rotate=90,font=\ttfamily\tiny] {addi} node[below,rotate=90,font=\ttfamily\tiny] {sp,\n} (SPRB\xa);
+}
+
+\foreach \x in {0,3}
+{
+    \draw[thick] (MRB\x) ++(2,0) coordinate (FL\x) -- ++(3,0) coordinate (FR\x);
+}
+
+\foreach \xa/\xb/\t/\c in {0/3/func1/red}
+{
+    \draw[latex-latex] ($(FL\xa)!0.2!(FR\xa)$) -- node[right=0.1cm,draw=\c,thick,fill=\c!10!white,align=center,font=\ttfamily] {\t/stack frame} ($(FL\xb)!0.2!(FR\xb)$);
+}
+
+\draw[ultra thin] (-2.5,0.7) rectangle (12.5,-3.05);
+
+\end{tikzpicture}
+\end{document}

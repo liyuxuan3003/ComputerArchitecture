@@ -1,0 +1,385 @@
+\section{汇编语言}
+
+\subsection{汇编指令的基本概念}
+
+在计算机中，最简单的操作就是加法运算，在\xref{code:高级语言中的加法}和\xref{code:汇编语言中的加法}中，分别展示了高级语言（C语言）和汇编语言中加法的写法。汇编语言中用\codex{#} 表示注释，而不是C语言的\codex{//} 或\codex{/**/} 。
+
+\begin{Code}[高级语言中的加法]{C}
+    code/Chapter06A_01.cod.c
+\end{Code}
+
+\begin{Code}[汇编语言中的加法]{ASM}
+    code/Chapter06A_02.cod.asm
+\end{Code}
+
+而减法和加法是完全类似的，如\xref{code:高级语言中的减法}和\xref{code:汇编语言中的减法}所示。\goodbreak
+
+\begin{Code}[高级语言中的减法]{C}
+    code/Chapter06A_03.cod.c
+\end{Code}
+
+\begin{Code}[汇编语言中的减法]{ASM}
+    code/Chapter06A_04.cod.asm
+\end{Code}
+
+汇编指令分为两部分，其中\codex{add} 和\codex{sub} 称为指令的助记符（Mnemonic），代表要执行什么操作，而\codex{a,b,c}则称为指令的操作数（Operand），\codex{a} 是目标操作数，\codex{b,c} 是源操作数，指令会对源操作数进行计算并将结果写入目标操作数。当然，实际上这里直接写\codex{a,b,c} 是不符合汇编语法的，在汇编层面没有“变量”这样的东西。我们之后会具体介绍操作数可以是什么。
+
+这里不管加法还是减法，对于操作数的格式都是相同的，这蕴含了下面的原则。
+\begin{BoxDesignPrinciple}[规律性即简洁性]
+    \centering
+    Regularity supports simplicity.
+\end{BoxDesignPrinciple}
+
+而对于一些更复杂的计算，例如\xref{code:高级语言中的复杂计算}和\xref{code:汇编语言中的复杂计算}中，我们需要计算的是\codex{a=b+c-d}，汇编会将其变为两条指令，先计算\codex{b+c} 并将中间结果暂存在\codex{t} 中，再通过计算\codex{t-d} 即\codex{b+c-d} 得到\code{a} 。
+\begin{Code}[高级语言中的复杂计算]{C}
+    code/Chapter06A_05.cod.c
+\end{Code}
+
+\begin{Code}[汇编语言中的复杂计算]{ASM}
+    code/Chapter06A_06.cod.asm
+\end{Code}
+
+这里用多条汇编指令实现复杂操作的思想蕴含了RISC-V的另一条设计原则。
+\begin{BoxDesignPrinciple}[令通常情形更快]
+    \centering
+    Make the common case fast.
+\end{BoxDesignPrinciple}
+
+实际上，是否为这样的复合任务设置专门的指令，区分了两类不同的指令集
+\begin{itemize}
+    \item 复杂指令集（CISC, Complex Instruction Set Computer）
+    \item 简单指令集（RISC, Reduced Instruction Set Computer）
+\end{itemize}
+x86是一个典型的复杂指令集，有一个典型的例子是，x86中会为“字符串拷贝”设置一个专门的指令，这在简单指令集中可能需要上百条指令才能完成，然而，这样的复杂指令带来的硬件开销会降低简单指令的执行速度，违背“令通常情形更快”的设计原则。RISC-V则是一个简单指令集。简单指令集通过控制指令数量，使硬件复杂度和所需的指令编码长度最小化。
+
+\subsection{算数指令}
+
+指令的操作数在实践中会有两种情形：寄存器、立即数。
+\begin{itemize}
+    \item 寄存器：代表变量
+    \item 立即数：代表常量
+\end{itemize}
+
+首先来解释寄存器，我们或许会认为通过一条\codex{add a,b,c} 的指令可以从内存中读取\codex{b,c} 相加并写入\codex{a} 处。然而事实是，指令无法直接访问内存！这是因为内存的读写速度远远慢于处理器执行指令的速度。在处理器内部，有一个称为寄存器堆（Register Set）的结构，对于RISC-V处理器，寄存器堆由32个寄存器构成，这些寄存器读写都非常快，可以被指令直接访问。
+
+这里我们看到，容量越小的存储单元往往意味着比较快的读写速度。
+\begin{BoxDesignPrinciple}[越小越快]
+    \centering
+    Smaller is faster.
+\end{BoxDesignPrinciple}
+\xref{fig:RISC-V寄存器堆结构}展示了RISC-V寄存器堆的结构，其包含的32个寄存器可以依次用\codex{x0,x1,...,x31} 来表示。然而，这32个寄存器并非完全相同可以自由使用的，而是被分配了特定的功能
+\begin{itemize}
+    \item 1个零寄存器（Zero Register）：\code{zero}
+    \item 1个返回地址寄存器（Return Address Register）：\code{ra}
+    \item 1个栈指针寄存器（Stack Pointer Register）：\code{sp}
+    \item 1个全局指针寄存器（Global Pointer Register）：\code{gp}
+    \item 1个线程指针寄存器（Thread Register）：\code{tp}
+    \item 6个临时寄存器（Temporary Register）：\code{t0,t1,t2,t3,t4,t5}
+    \item 8个参数寄存器（Argument Register）：\code{a0,a1,a2,a3,a4,a5,a6,a7}
+    \item 12个保存寄存器（Saved Register）：\code{s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11}
+    \item \code{s0} 亦可兼作帧指针寄存器（Frame Pointer Register），可用\codex{fp} 表示。
+    \item \code{a0,a1} 亦可兼作返回值寄存器（Return Values Register）。
+\end{itemize}
+
+在汇编语言中，我们更常用的是上面由功能命名的寄存器名称，而不是\codex{x0,x1,...,x31}。
+
+这些不同寄存器的具体作用和差异我们会在后文逐渐揭示。眼下，我们可以当成一般变量使用的是保存寄存器\codex{s0,s1,...,s11} 和临时寄存器\codex{t0,t1,...,t5}，另外，零寄存器\codex{zero} 也很有用，它被硬连线为$0$值，这意味着\codex{zero} 可以作为常数$0$被读取且对\codex{zero} 的写入无效。
+
+\begin{Figure}[RISC-V寄存器堆结构]
+    \includegraphics[scale=0.8]{build/Chapter06A_01.fig.pdf}
+\end{Figure}
+
+在\xref{code:RISC-V的寄存器加法指令}和\xref{code:RISC-V的寄存器减法指令}中，展示了加法指令和减法指令\codex{add,sub} 的操作，两者分别将\codex{s1,s2} 寄存器（假设寄存器\codex{s1,s2} 中已存有恰当的值）求和或求差，并将结果存入\codex{s0} 寄存器中。
+\begin{Code}[RISC-V的寄存器加法指令]{ASM}
+    code/Chapter06A_07.cod.asm
+\end{Code}
+
+\begin{Code}[RISC-V的寄存器减法指令]{ASM}
+    code/Chapter06A_08.cod.asm
+\end{Code}
+
+在\xref{code:RISC-V的取负指令}中，展示了取负指令\codex{neg} 的操作，我们知道对一个数取负本质上等价于用零去减该数，即\codex{neg s0,s1} 等价于\codex{sub s0 zero s1}，因此硬件其实并没有必要实现取负指令的必要。
+
+\begin{Code}[RISC-V的取负指令]{ASM}
+    code/Chapter06A_09.cod.asm
+\end{Code}
+
+伪指令（Pseudoinstruction）是指具有类似指令的形式，但并不被处理器直接支持的语句。伪指令是为便利汇编语言编写而存在的，其往往是某一真正指令的特殊情况。伪指令会在汇编过程中按其定义转换为处理器支持的真正指令。\xref{code:RISC-V的取负指令}中的\codex{neg} 就是一条很典型的伪指令！
+
+在C语言中，除了\codex{a=b+c}，我们还可能会使用\codex{a=b+42} 这样的语句。这里像\codex{42} 这样的数字并不需要被存储，而是在运算时立即被使用，这就是所谓的立即数（Immediate）。不过，虽然同样是加法，在汇编语言层面，寄存器加法\codex{add} 和立即数加法\codex{addi} 是两条不同的指令！在\xref{code:RISC-V的立即数加法指令}展示了立即数加法指令\codex{addi} 的使用，要注意的是，立即数必须放在后面的位置。另外在汇编代码中，立即数使用十六进制或十进制其实都是可以的（这里用了十六进制来表示）。
+\begin{Code}[RISC-V的立即数加法指令]{ASM}
+    code/Chapter06A_10.cod.asm
+\end{Code}
+
+立即数加法\codex{addi} 有很多作用，其中之一就是填充一个寄存器。不过应注意\codex{addi} 中的立即数只能是$12$位的，这是因为一条指令自身也只有$32$位，需要留一些空间给寄存器和指令编码。
+\begin{Code}[RISC-V的立即数低位加载指令]{ASM}
+    code/Chapter06A_11.cod.asm
+\end{Code}
+
+如何将完整的$32$位立即数加载到一个寄存器中呢？这需要组合使用立即数高位加载\codex{lui} 和立即数加法\codex{addi}，由\codex{lui} 指令加载高$20$位，由\codex{addi} 指令加载低$12$位，如\xref{code:RISC-V的立即数高位加载指令}所示。
+\begin{Code}[RISC-V的立即数高位加载指令]{ASM}
+    code/Chapter06A_12.cod.asm
+\end{Code}
+
+如何更优雅的实现这一点呢？伪指令\codex{li} 可以直接加载一个$32$位立即数至寄存器
+\begin{itemize}
+    \item 若\codex{li} 加载的立即数低于$12$位，则汇编为\codex{addr}。
+    \item 若\codex{li} 加载的立即数高于$12$位，则汇编为\codex{lui} 和\codex{addr} 的组合。
+\end{itemize}
+
+在\xref{code:RISC-V的立即数高位加载指令}中，展示了立即数加载伪指令\codex{li} 的使用，包含其两种可能的情况。
+\begin{Code}[RISC-V的立即数加载指令]{ASM}
+    code/Chapter06A_13.cod.asm
+\end{Code}
+
+立即数加法\codex{addi} 的第二个作用是通过对一个寄存器加\codex{0} 实现寄存器拷贝\codex{mv}。
+\begin{Code}[RISC-V的寄存器拷贝指令]{ASM}
+    code/Chapter06A_15.cod.asm
+\end{Code}
+
+立即数加法\codex{addi} 的第三个作用是通过对\codex{zero} 加\codex{0} 实现空指令\codex{nop}。空指令\codex{nop} 并不会有任何实际效果，如\xref{code:RISC-V的空指令}所示，但它会实实在在占有处理器的一个时钟周期，这在有些情况下是有用的，例如在C语言层面可以通过一定数量的\codex{nop} 实现\codex{sleep()} 这样的延时函数。
+\begin{Code}[RISC-V的空指令]{ASM}
+    code/Chapter06A_14.cod.asm
+\end{Code}
+
+\subsection{逻辑指令}
+
+在\xref{code:RISC-V的逻辑指令}中展示了RISC-V的逻辑指令\codex{and,or,xor} 的用法，它们分别实现两个寄存器间的按位与、或、异或。类似于算数指令，这三者亦有对应的立即数版本\codex{andi,ori,xori}。
+
+我们可以从一个很有趣的角度考察这些逻辑运算。\xref{code:RISC-V的逻辑指令}中是对\codex{s0,s1} 进行逻辑运算并将结果保存在\codex{s2} 中。在这些逻辑运算中\codex{s0,s1} 是平等的，但不妨碍我们分别赋予它们一些不同的含义。若认为\codex{s0} 是\codex{s1} 的掩膜（mask），此时这三种逻辑运算可以理解为
+\begin{itemize}
+    \item 在\codex{and} 运算中，掩膜\codex{s0} 的效果是令\codex{s1} 中那些自身为\codex{0} 的位也被“清除”为\codex{0}。
+    \item 在\codex{or } 运算中，掩膜\codex{s0} 的效果是令\codex{s1} 中那些自身为\codex{1} 的位也被“赋值”为\codex{1}。
+    \item 在\codex{xor} 运算中，掩膜\codex{s0} 的效果是令\codex{s1} 中那些自身为\codex{1} 的位发生“翻转”。
+\end{itemize}
+
+我们或许注意到了一个问题，最基本的非运算\codex{not} 为什么还没有提及？实际上，这是因为非运算\codex{not s2 s1} 是\codex{xori s2 s1 -1} 对应的伪指令！结合上述对\codex{xori} 的直观理解很容易解释这点：依照补码规则，立即数\codex{-1} 意味着其每一位都是\codex{1}。若将\codex{-1} 视为掩膜，它会令参与异或运算的另外一个数\codex{s1} 中每一位都发生翻转，显然，这就等价于对数\codex{s1} 进行非运算了。
+
+\begin{Code}[RISC-V的逻辑指令]{ASM}
+    code/Chapter06A_16.cod.asm
+\end{Code}
+
+目前，诸如\codex{addi, xori} 等的立即数运算指令中，立即数都被限制在$12$位以内。然而，立即数参与这些运算时，势必需要扩展到$32$位。一般的说，这类二进制数扩展有两种方式
+\begin{itemize}
+    \item 无符号扩展（Zero Extended），将高位用零填充。
+    \item 有符号扩展（Sign Extended），将高位用原先的最高位填充。
+\end{itemize}
+
+立即数采用符号扩展，这也是为何前面$12$位下的\codex{-1} 扩展到$32$位时仍然是全\codex{1}。
+
+\subsection{移位指令}
+在\xref{code:RISC-V的移位指令}中展示了RISC-V的移位指令\codex{sll,srl,sra} 以及\codex{slii,srli,srai} 的用法。
+\begin{Code}[RISC-V的移位指令]{ASM}
+    code/Chapter06A_17.cod.asm
+\end{Code}
+
+我们都知道，位移有“左移”和“右移”两种，但为何这里有三条位移指令？
+\begin{itemize}
+    \item \codex{sll,slli} 是逻辑左移，左移后低位的空位用\codex{0} 填充。
+    \item \codex{srl,srli} 是逻辑右移，右移后高位的空位用\codex{0} 填充。
+    \item \codex{sra,srai} 是算数右移，右移后高位的空位用元原数最高位填充。
+\end{itemize}
+由此可见，这里本质上还是在解决有符号数和无符号数的问题，无符号数右移时需填充\codex{0}，有符号数右移时需填充其最高位，否则会导致负数右移后变成了正数。但无论哪一种情况，在左移时都应填充\codex{0}。因此，右移需分为“逻辑右移”和“算数右移”，左移只有“逻辑左移”。
+
+\subsection{读写指令}
+假如只能使用寄存器存储数据，那这意味着我们的程序最多只能有$32$个变量，这显然不符合事实。不过，实际上也可以用存储器存储数据（内存），存储器空间更大但读写更慢。然而这就引出了一个重要的问题：由于RISC-V处理器的指令能直接操作的数据只有寄存器，故我们还需要一些读写指令，能将存储器某一地址中的数据读取到寄存器中以供其他指令访问。
+
+在继续讨论读写指令之前，有必要说明几个概念。我们知道，字节（Byte）是计算机中的基本数据单位，字节代表$\SI{8}{bit}$长度。字（Word）则是计算机总线的宽度，例如在一个32位的处理器中，字代表$\SI{32}{bit}$长度。这意味着：指令操作的数据都是$32$位的，指令本身亦用$32$位编码，存储器的地址亦用$32$表示。半字（Half-Word）则是从字衍生出来代表$\SI{16}{bit}$长度。
+
+\begin{itemize}
+    \item Byte代表$\SI{8}{bit}$长度的数据，称为“字节”。
+    \item Half代表$\SI{16}{bit}$长度的数据，称为“半字”。
+    \item Word代表$\SI{32}{bit}$长度的数据，称为“字”。
+\end{itemize}
+
+\begin{Figure}[存储器读写示意]
+    \includegraphics[scale=0.8]{build/Chapter06A_02.fig.pdf}
+\end{Figure}
+
+在存储器中，数据是以$\SI{32}{bit}$的字的形式存储的。尽管如此，每个字节仍然有自己的地址，这称为按字节寻址（Byte Addressable）。这也就是说，如果某个数据的地址是\codex{0x00010000}，那么下一数据的地址应是\codex{0x00010004}。RISC-V要求字对齐访问（Word-Aligned Address），即访问一个字时，地址必须是$4$的整数倍，换言之，当进行$\SI{32}{bit}$访问时，这$\SI{32}{bit}$必须属于同一个字。当然，RISC-V亦提供半字和字节访问，此时地址只需要是$2$或$1$的整数倍即可。
+
+\begin{Code}[RISC-V的读写指令]{ASM}
+    code/Chapter06A_18.cod.asm
+\end{Code}
+
+在\xref{code:RISC-V的读写指令}中展示了RISC-V的读写指令\codex{lw,sw}，这里读写是站在存储器视角的
+\begin{itemize}
+    \item 读指令\codex{lw} 是指将数据从存储器“读取”至寄存器中。
+    \item 写指令\codex{sw} 是指将数据从寄存器“写入”至存储器中。
+\end{itemize}
+
+读写指令的设计很巧妙的解决了一个问题。我们知道，存储器的地址是用$\SI{32}{bit}$二进制编码的，而一条指令本身也只有$\SI{32}{bit}$长度，不可能带一个$\SI{32}{bit}$的立即数作为地址。但是，如果每次都需要预先用\codex{li} 将目标地址加载到某一寄存器，再通过\codex{lw,sw} 以该寄存器的地址进行读写，那就需要三条指令（\codex{li} 会展开为两条指令）才能完成一个数据的读写，这无疑效率太低了！如\xref{code:RISC-V的读写指令}所示，其实相当一部分存储器读写，是对存储器中一段连续地址空间进行的，即C语言层面的数组。设想一个数据类型为\codex{int} 的数组\codex{m}，由于\codex{int} 占用$4$个字节，因此若\codex{m[0]} 的地址是\codex{0x00010000}，则后续\codex{m[1],m[2],m[3],m[4]} 就是在此基础上依次加$4$的\codex{0x00010004,0x00010008,0x0001000C,0x00010010}。所以，我们只需要先保存\codex{m[0]} 的地址\codex{0x00010000} 至寄存器\codex{s0}，随后使用\codex{lw,sw} 时，就可以用\codex{imm(s0)} 这样一种新的立即数语法，代表我们要读写的地址是\codex{s0} 中存储地址加上\codex{imm} 的偏移，尽管这里立即数\codex{imm} 不能超过$\SI{12}{bit}$，但是对于绝大多数情况，这种偏移已经足够我们访问到数组中所有元素了。在这个例子中，首先对地址\codex{8(s0)} 即\codex{m[2]} 进行读取，随后对地址\codex{0(s0)} 即\codex{m[0]} 进行写入。
+
+读写指令中，除字读写\codex{lw,sw} 指令，亦有半字读写的\codex{lh,lhu,sh} 和字节读写的\codex{lb,lbu,sb} 指令。这里需要解释的是为什么半字读和字节读存在\codex{lh,lb} 和\codex{lhu,lbu} 两套指令，而半字写和字节写却只有\codex{sh,sb}一套。这是因为，写的时候，只需要将$\SI{32}{bit}$中的低$\SI{16}{bit}$或低$\SI{8}{bit}$写到存储器特定位置即可。读的时候，我们需要将$\SI{16}{bit}$或$\SI{8}{bit}$数据重新扩展回$\SI{32}{bit}$以便处理器进行使用。但这就涉及到使用“有符号扩展”还是“无符号扩展”了，故需两套指令。
+
+\subsection{跳转指令}
+到目前为止，我们似乎都假定了指令总是会一条一条的顺序执行下去。然而，这从硬件上是怎么实现的呢？考虑\xref{code:RISC-V的顺序执行示例}，将\codex{s0} 初始化为\codex{0}，随后三条依次对其加\codex{1,2,4}，结果应为\codex{7}。
+\begin{Code}[RISC-V的顺序执行示例]{ASM}
+    code/Chapter06A_19.cod.asm
+\end{Code}
+
+\xref{fig:RISC-V的顺序执行示例}展示了处理器是怎么存储和读取指令的。我们知道，每一条指令最终都可以转换为$\SI{32}{bit}$的二进制代码，这会占用$4$个字节，因此，假如第一条指令位于地址\codex{0x00010000} 处，那么后续指令的地址就依次存储在地址\codex{0x00010004,0x00010008,0x0001000C} 处。在RISC-V处理器，除了寄存器堆中的$32$个寄存器外，还有一个独立于其外的\codex{pc} 寄存器，它代表了当前指令的地址。在每个时钟周期，\codex{pc} 寄存器的值会变为\codex{pc+4}，这样就可以顺序执行指令了！
+\begin{Figure}[RISC-V的顺序执行示例]
+    \includegraphics[scale=0.8]{build/Chapter06A_03.fig.pdf}
+\end{Figure}
+
+然而，若程序只能顺序执行，能做的事情是非常有限的，在RISC-V指令集中，有一些特殊的指令可以进行“跳转”，跳转指令具体可以分为无条件跳转指令和有条件跳转指令两类。
+
+\xref{code:RISC-V的无条件跳转指令}展示了无条件跳转指令\codex{j} 的使用。首先，我们注意到的是代码中有一个\codex{target:} 的记号，这是汇编中的标签（Label）。标签存在的意义是，尽管每一条汇编指令最终都会有一个地址，然而这个地址在编写汇编代码是尚不清楚的，因此，我们可以用标签标记一条指令，而在使用跳转指令时，我们就可以直接使用标签来表示要跳转的地方。例如，在这个例子中，标签\codex{target} 位于\codex{addi s0,s0,4} 前（标签和指令位于两行或位于同一行都可以），因此，当运行到\codex{j target} 时就会跳过其后的\codex{addi s0,s0,2} 直接来到\codex{addi s0,s0,4} 处，结果应为\codex{7}。
+
+\begin{Code}[RISC-V的无条件跳转指令]{ASM}
+    code/Chapter06A_20.cod.asm
+\end{Code}
+
+\xref{code:RISC-V的无条件跳转指令}对应\xref{fig:RISC-V的无条件跳转指令}，当\codex{pc} 位于\codex{j target} 时，下一指令将是\codex{pc=target}，而非\codex{pc=pc+4}。
+
+\xref{code:RISC-V的无条件跳转指令}还展示了更多的无条件跳转指令，包括\codex{j,jr,jal,jalr,ret}。有趣的是，这里使用的看上去最基本的跳转指令\codex{j} 实际上是一条称为\codex{jal} 的跳转并链接指令的伪指令。这里所谓的链接是指在跳转的同时在一个寄存器中记录下当前跳转指令的下一条指令，以便稍后在跳转回到此处，这在函数调用中回用到。有关这些无条件跳转指令的含义、关系、用法，我们会在之后展开函数调用时详细讨论。眼下，只需要知道通过\codex{j} 可以跳转到一个特定为止即可。
+\begin{Figure}[RISC-V的无条件跳转指令]
+    \includegraphics[scale=0.8]{build/Chapter06A_04.fig.pdf}
+\end{Figure}
+
+\xref{code:RISC-V的有条件跳转指令}展示了有条件跳转指令\codex{beq} 的使用，执行\codex{beq s1,s2,target} 时，其会判断这两个寄存器\codex{s1,s2} 中的数值是否相等，若相等则跳转至\codex{target} 处，若不等则继续正常执行。
+\begin{Code}[RISC-V的有条件跳转指令]{ASM}
+    code/Chapter06A_21.cod.asm
+\end{Code}
+
+\xref{code:RISC-V的有条件跳转指令}对应\xref{fig:RISC-V的有条件跳转指令}，条件是否成立，决定下一指令是\codex{pc=target} 还是\codex{pc=pc+4}。
+
+\xref{code:RISC-V的无条件跳转指令}还展示了更多的有条件跳转指令，包括\codex{beq,bne,blt,ble,bgt,bge}，这六条指令分别对应\codex{==,!=,<,<=,>,>=}的判断，有趣的是，其中后四条指令\codex{blt,ble,bgt,bge} 中只有\codex{blt,bge} 是真正的指令，另外两条是伪指令。这是因为处理器的ALU单元在进行比较时，只会产生“是否相等”和“是否小于”两个结果，前者给出\codex{beq,bne}，后者给出\codex{blt,bge}，即给出了“小于”及其反面“大于等于”。而\codex{bgt,ble} 完全可以复用\codex{blt,bge}，只不过复用时需要把两个操作数交换一下，换言之，就是“$a>b$等价于$b<a$”和“$a\leq b$等价于$b\geq a$”。
+
+\begin{Figure}[RISC-V的有条件跳转指令]
+    \includegraphics[scale=0.8]{build/Chapter06A_05.fig.pdf}
+\end{Figure}
+
+除此之外，当比较大小关系时，还涉及到参与比较的是无符号数还是有符号数的问题。这四条\codex{blt,ble,bgt,bge} 适用于有符号数，它们对应的无符号数版本是\codex{bltu,bleu,bgtu,bgeu}。
+
+通过组合使用这些跳转指令，我们可以实现高级语言中的各种分支语句和循环语句！
+
+\subsection{分支语句的实现}
+
+\subsubsection{If语句}
+\xref{code:If语句的实现（高级语言）}和\xref{code:If语句的实现（汇编语言）}展示了\codex{if} 语句如何在汇编中实现。应注意，在C语言中\codex{if(a==b)} 的含义是当条件满足时执行\codex{if} 语句块的内容，否则跳过。但是，在汇编中，我们能做的是条件跳转，因此通过语句\codex{bne s1,s2,endif} 在\codex{a!=b} 即\codex{a==b} 不成立时跳转至\codex{if} 语句块之后的位置。由此可见，当我们用“条件跳转”表达高级语言的“条件执行”时，需要把条件取反！
+
+\begin{Code}[If语句的实现（高级语言）]{C}
+    code/Chapter06A_22.cod.c
+\end{Code}
+
+\begin{Code}[If语句的实现（汇编语言）]{ASM}
+    code/Chapter06A_23.cod.asm
+\end{Code}
+
+\subsubsection{If/Else语句}
+\xref{code:If/Else语句的实现（高级语言）}和\xref{code:If/Else语句的实现（汇编语言）}展示了\codex{if/else} 语句如何在汇编中实现。这里有几点不同，首先，我们需要有两个标签\codex{else} 和\codex{endif} 分别标注\codex{else} 语句块的开始处和整个\codex{if/else} 语句块的结束处（标签名可以根据需要随意选定）。随后，在\codex{if} 前的\codex{bne s1,s2,else} 在条件不成立时会跳转至\codex{else} 处，最后，在\codex{if} 结束处需要用无条件跳转\codex{j endif} 跳过\codex{else} 部分的执行。
+
+\begin{Code}[If/Else语句的实现（高级语言）]{C}
+    code/Chapter06A_24.cod.c
+\end{Code}
+
+\begin{Code}[If/Else语句的实现（汇编语言）]{ASM}
+    code/Chapter06A_25.cod.asm
+\end{Code}
+
+\subsubsection{Switch/Case语句}
+\xref{code:Switch/Case语句的实现（高级语言）}和\xref{code:Switch/Case语句的实现（汇编语言）}展示了\codex{switch/case} 语句如何在汇编中实现。有趣的是，在汇编中，其实每个\codex{case1,case2,case3} 的标签是可以直接进入的，但是进入后，立即会进行判断是否符合该\codex{case} 的条件，若不满足就跳转至下一个\codex{case}，而每个\codex{case} 执行完之后的\codex{break} 则通过无条件跳转\codex{j done} 实现。除此之外，由于这里\codex{a==1,a==2,a==3} 是和“立即数”进行的比较，但RISC-V又没有这类“立即数”版本的有条件跳转指令。一个故折衷的办法是，先通过\codex{li} 指令将这个“立即数”加载到一个临时寄存器\codex{t1} 中，随后再与\codex{t1} 的值进行比较即可。
+\begin{Code}[Switch/Case语句的实现（高级语言）]{C}
+    code/Chapter06A_26.cod.c
+\end{Code}
+
+\begin{Code}[Switch/Case语句的实现（汇编语言）]{ASM}
+    code/Chapter06A_27.cod.asm
+\end{Code}
+
+\subsection{循环语句的实现}
+
+\subsubsection{While语句}
+\xref{code:While语句的实现（高级语言）}和\xref{code:While语句的实现（汇编语言）}展示了\codex{while} 语句如何在汇编中实现。我们可以看出，实现循环的思路是：循环开始处用有条件跳转判断是否要退出，循环结束处用无条件跳转回到循环开始处。
+\begin{Code}[While语句的实现（高级语言）]{C}
+    code/Chapter06A_28.cod.c
+\end{Code}
+
+\begin{Code}[While语句的实现（汇编语言）]{ASM}
+    code/Chapter06A_29.cod.asm
+\end{Code}
+
+\subsubsection{Do/While语句}
+\xref{code:Do/While语句的实现（高级语言）}和\xref{code:Do/While语句的实现（汇编语言）}展示了\codex{do/while} 语句如何在汇编中实现。我们注意到同样对于\codex{pow<256} 的循环条件，在\codex{while} 语句中需取反写为\codex{bge s1,t1,done}，在\codex{do/while} 语句中则可以直接写为\codex{blt s1,t1,while}。这就是因为，前者是不满足循环条件“跳转退出”，后者是不满足循环条件“跳转继续”。也因此，\codex{do/while} 语句不需要额外的\codex{j while} 保持循环的继续。 
+
+\begin{Code}[Do/While语句的实现（高级语言）]{C}
+    code/Chapter06A_30.cod.c
+\end{Code}
+
+\begin{Code}[Do/While语句的实现（汇编语言）]{ASM}
+    code/Chapter06A_31.cod.asm
+\end{Code}
+
+\subsubsection{For语句}
+\xref{code:For语句的实现（高级语言）}和\xref{code:For语句的实现（汇编语言）}展示了\codex{for} 语句如何在汇编中实现。我们可以看出\codex{for} 循环和\codex{while} 循环的汇编类似，只不过，需在循环体前进行\codex{i=1} 的初始化，并在循环体最后进行\codex{i++} 的更新。
+\begin{Code}[For语句的实现（高级语言）]{C}
+    code/Chapter06A_32.cod.c
+\end{Code}
+
+\begin{Code}[For语句的实现（汇编语言）]{ASM}
+    code/Chapter06A_33.cod.asm
+\end{Code}
+
+\subsection{函数调用的实现}
+包括C语言在内的许多高级语言支持函数（Function），以实现代码的复用
+\begin{itemize}
+    \item 函数可以有若干输入，称为参数（Argument）。
+    \item 函数可以有一个输出，称为返回值（Return Value）。
+    \item 函数应当根据参数计算出返回值且不产生任何额外的影响。
+\end{itemize}
+当一个函数调用另一个函数时，前者称为调用函数（Caller），后者称为被调函数（Callee）。在处理器层面，函数的调用过程必须对在何处存放参数和返回值达成一致。对于RISC-V处理器而言，调用时使用\codex{a0,a1,...,a7} 传递至多$8$个参数，返回时使用\codex{a0} 传递$1$个返回值。
+
+\subsubsection{函数的调用和返回}
+在\xref{code:基本的函数调用（高级语言）}和\xref{code:基本的函数调用（汇编语言）}中，展示了一个最基本的函数调用过程：我们在\codex{main()} 函数中调用了\codex{func_empty()} 函数，这个\codex{func_empty()} 函数不需要参数也不产生返回值，它在调用后立即返回。通过这一例子，我们可以理解“调用”和“返回”这两件事情是如何完成的。通过\xref{code:基本的函数调用（汇编语言）}可以看到，调用由\codex{jal func_empty} 实现，返回由\codex{jr ra} 实现。另外，调用的\codex{jal} 之后还跟了一句\codex{nop}，它没有特别的意义，只是为了代表\codex{jal} 之后任何可能的“下一条指令”。
+
+\begin{Code}[基本的函数调用（高级语言）]{C}
+    code/Chapter06A_34.cod.c
+\end{Code}
+
+\begin{Code}[基本的函数调用（汇编语言）]{ASM}
+    code/Chapter06A_35.cod.asm
+\end{Code}
+
+调用\codex{jal func} 和返回\codex{jr ra} 都是无条件跳转，这其中涉及到比较琐碎的伪指令和默认行为
+\begin{itemize}
+    \item 调用指令\codex{jal func} 是所谓的跳转并链接（Jump and Link）指令。跳转是指\codex{pc} 下一周期应指向\codex{func} 所在地址，链接则是指将当前指令的下一条指令的地址\codex{pc+4} 存储至返回地址（Return Address）寄存器\codex{ra} 中。链接的目的是，因为函数调用最终肯定是要返回的，而返回后，程序应当从调用指令后的下一条指令开始继续执行，所以我们必须记录下返回地址。这个例子中，返回后就应当从\codex{nop} 开始继续执行。另外\codex{jal func} 的完整形式应当是\codex{jal ra,func}，即我们可以指定存放返回地址的寄存器，若不指定则默认为\codex{ra}。这一特性很有用的一点是理解\codex{j target} 是\codex{jal zero,target} 的伪指令，这就是说，普通的跳转\codex{j} 也是用跳转并链接\codex{jal} 实现的，只不过返回地址被写入\codex{zero} 丢弃。
+    \item 返回指令\codex{jr ra} 是所谓的跳转至寄存器（Jump Register）指令。如何理解\codex{j,jr} 的区别呢？在处理器层面，使用\codex{j} 指令可以跳转至当前指令地址\codex{pc} 偏移$20$位有符号立即数内的范围。使用\codex{jr} 指令可以跳转至某一寄存器内存储地址偏移$12$位有符号立即数内的范围。当然，也可以偏移为$0$，故实际上\codex{jr ra} 其实是\codex{jr ra,0} 的简写，前者还可以进一步用伪指令\codex{ret} 简写（固定跳转至\codex{ra} 寄存器且偏移为$0$）。进一步，正如\codex{j} 是\codex{jal} 的伪指令，实际上\codex{jr} 是\codex{jalr} 的伪指令，因此\codex{jr ra,0} 其实是\codex{jalr zero,ra,0}。
+\end{itemize}
+
+由此可见，处理器实现的都是跳转并链接，当不需要链接时把返回地址写入\codex{zero} 丢弃即可。
+
+\subsubsection{函数参数和返回值的传递与栈的使用}
+\xref{code:复杂的函数调用（高级语言）}和\xref{code:复杂的函数调用（汇编语言）}展示了一个较为复杂的函数调用，首先\codex{main()} 函数会调用\codex{func1()} 函数，\code{func1()} 接受四个参数\codex{x1,x2,y1,y2}，该函数将返回\codex{x1,x2} 之和与\codex{y1,y2} 之和的差的两倍（用左移一位实现），同时，\code{func1()} 中左移一位的过程由其再调用\codex{func2()} 函数实现。
+
+\begin{Code}[复杂的函数调用（高级语言）]{C}
+    code/Chapter06A_38.cod.c
+\end{Code}
+
+\begin{Code}[复杂的函数调用（汇编语言）]{ASM}
+    code/Chapter06A_39.cod.asm
+\end{Code}
+
+首先关注到函数调用是如何传递参数的，如\xref{code:复杂的函数调用（汇编语言）}所示，\code{main()} 函数将\codex{func1()} 函数所需的四个参数\codex{25,20,15,10} 写入\codex{a0,a1,a2,a3} 中，\code{main()} 在调用后会从\codex{a0} 中读出返回值。
+
+随后，注意到\xref{code:复杂的函数调用（汇编语言）}出现了大量的\codex{lw,sw} 指令对在向存储器备份和还原寄存器的值。
+\begin{itemize}
+    \item 函数\codex{func1()} 在开始和结束时备份还原了其计算过程中使用的保存寄存器\codex{s0,s1,s2}。
+    \item 函数\codex{func1()} 亦在调用\codex{func2()} 前后备份还原自身的参数寄存器\codex{a0,a1,a2,a3}。
+\end{itemize}
+这样做的原因是，函数在计算返回值的过程中不能产生额外的影响，因此需要在调用开始备份寄存器的值并在返回前还原。然而，并不是所有寄存器都需要如此。如\xref{tab:寄存器的保存类型}所示，寄存器被分为被调函数保存（Callee Saved）和调用函数保存（Caller Saved）两类。这两类寄存器的处理方式是不一样的：对于Callee Saved类型寄存器，函数有义务保证在它们在自身执行前后不变，其中典型的就是保存寄存器\codex{s0,s1,...,s11}，这也是其名称Saved的原因。不一样的是，对于Caller Saved类型寄存器，函数在调用过程中可以随意改写，但是对等的，函数如果希望该类型的寄存器在自己调用其他函数前后不会被更改，其需要自行在调用其他函数前后备份和还原，该类型包含临时寄存器\codex{t0,t1,...,t5} 和参数寄存器\codex{a0,a1,...,a7}。通常来说，临时寄存器不会需要进行备份还原，临时寄存器如果被使用，那么意味着它的生命周期应当在下一次函数调用发生前结束。但是，参数寄存器在有一种情况下一定需要备份，若在函数中调用另一个函数后仍然需要用到当前函数的参数（这里\codex{func1()} 调用\codex{func2()} 后其实已经不再需要自身的参数\codex{a0,a1,a2,a3} 了，出于示例的目的进行了备份），无论是调用函数的过程本身，还是调用的函数进一步调用了其他函数，都有可能会改写参数寄存器中的值。
+
+\begin{Tablex}[寄存器的保存类型]{Xlll}
+    <类型&寄存器\\>
+    被调函数保存（Callee Saved）&保存寄存器\texttt{s0,s1,...,s11}&返回地址寄存器\texttt{ra}&栈指针寄存器\texttt{sp}\\
+    调用函数保存（Caller Saved）&参数寄存器\texttt{a0,a1,...,a7}&\mc{2}(l){临时寄存器\texttt{t0,t1,...,t5}}\\
+\end{Tablex}
+
+接下来，注意到寄存器进行备份还原时，是在向存储器中地址为\codex{sp} 偏移的位置进行读写。这个\codex{sp} 被称为栈指针（Stack Pointer），而其操作的存储器空间被称为栈（Stack）。栈是一种后进先出（Last in First out, LIFO）的数据结构。如\xref{fig:栈在函数调用中的使用}所示，栈在函数调用过程中可以作为备份寄存器的临时空间。栈是自上向下扩展的，当需要使用栈空间时，通过下移\codex{sp} 扩大栈空间，当使用完成后，通过上移\codex{sp} 释放栈空间。尽管称为“栈”，但实际上栈空间是可以随机读写的，称之为栈是因为最后写入栈的数据会最先被释放。另外，由于栈指针寄存器\codex{sp} 本身也是一个Callee Saved类型的寄存器，需要谨慎的对其操作，确保能在函数返回之前还原。
+
+\begin{Figure}[栈在函数调用中的使用]
+    \includegraphics[scale=0.8]{build/Chapter06A_07.fig.pdf}
+\end{Figure}
+
+实际上，栈不仅仅是函数调用时备份寄存器的临时空间，栈上会存储所有的局域变量！上述编写汇编代码时，由于变量总数不多，所有变量都在寄存器上。但一般来说，程序应当为每个函数中的局域变量在栈上分配空间，它们会自然的在函数返回时被栈释放，即所谓“局域”。
