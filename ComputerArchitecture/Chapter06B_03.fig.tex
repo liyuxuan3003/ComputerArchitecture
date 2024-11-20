@@ -64,7 +64,7 @@
     1/{Field of Operand: \texttt{imm,rs1,rd}},%
     2/{Immediate Bits (Encode/Actual): 12/12},
     3/{Immediate Type: Signed},
-    4/{Instruction: \texttt{addi,xori,ori,andi,slti,sltiu,lb,lh,lw,lbu,lhu,jal}}
+    4/{Instruction: \texttt{addi,xori,ori,andi,slti,sltiu,lb,lh,lw,lbu,lhu,jalr}}
 }%
 {
     \path ($(LB0)+(0,-\yt*\ytext-0.8)$) node[right] {\t};
@@ -73,7 +73,7 @@
 \foreach \yt/\t/\n/\na/\nb/\nc/\nd/\ne/\nf/\ng in{%
     0/OP-IMM/19/0/0/1/0/0/1/1,%
     1/LOAD/3/0/0/0/0/0/1/1,%
-    2/JAL/103/1/1/0/0/1/1/1%
+    2/JALR/103/1/1/0/0/1/1/1%
 }%
 {
     \path ($(LB0)+(\xbit*25.5,-\yt*\ytext-0.8)$) node[left=0.1cm] {\textbf{\t}(\n): };

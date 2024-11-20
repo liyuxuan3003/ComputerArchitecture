@@ -65,14 +65,14 @@
     1/{Field of Operand: \texttt{imm,rd}},%
     2/{Immediate Bits (Encode/Actual): 20/21},
     3/{Immediate Type: Signed},
-    4/{Instruction: \texttt{jalr}}
+    4/{Instruction: \texttt{jal}}
 }%
 {
     \path ($(LB0)+(0,-\yt*\ytext-0.8)$) node[right] {\t};
 }
 
 \foreach \yt/\t/\n/\na/\nb/\nc/\nd/\ne/\nf/\ng in{%
-    0/JALR/111/1/1/0/1/1/1/1%
+    0/JAL/111/1/1/0/1/1/1/1%
 }%
 {
     \path ($(LB0)+(\xbit*25.5,-\yt*\ytext-0.8)$) node[left=0.1cm] {\textbf{\t}(\n): };

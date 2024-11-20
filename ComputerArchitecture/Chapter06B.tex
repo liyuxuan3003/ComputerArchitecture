@@ -1,5 +1,194 @@
 \section{机器语言}
 
+汇编语言便于人的阅读，然而，数字电路只能理解二进制。因此，汇编语言编写的程序需要转换为用二进制表示的机器语言。RISC-V固定使用$32$位编码一条指令。通过\xref{sec:汇编语言}的学习我们已经知道，有些指令的操作数比较简单，有些指令的操作数比较复杂，故势必会有一些指令并不需要全部$32$位的编码空间。然而，若使用可变长指令，则会显著增加处理器的复杂性。
+\begin{BoxDesignPrinciple}[好设计需要好妥协]
+    \centering
+    Good design demands good compromises.
+\end{BoxDesignPrinciple}
+
+RISC-V为了更充分的利用32位的编码空间，做出的妥协是定义六种指令类型
+\begin{itemize}
+    \item R型指令（Register）：寄存器类型。操作数是\codex{rs1,rs2,rd}。这类指令涵盖了所有寄存器运算指令，将\codex{rs1} 和\codex{rs2} 经过运算的结果写入\codex{rd}。这是最容易理解的一类指令。
+    \item I型指令（Immediate）：立即数类型。操作数是\codex{imm,rs1,rd}。这类指令涵盖了所有立即数运算指令，将\codex{rs1} 和\codex{imm} 经过运算的结果写入\codex{rd}。除此之外，这一类型中还包含了读取指令和跳转至寄存器并链接指令。前者是将地址\codex{imm(rs1)} 的数据写入\codex{rd}，后者则是将\codex{pc+4} 写入\codex{rd} 并令\codex{pc} 跳转至\codex{rs1+imm} 处。因此，I型指令不仅仅是立即数运算！
+    \item S型指令（Store）：存储类型。操作数是\codex{imm,rs1,rs2}。这类指令涵盖了所有存储指令，将\codex{rs2} 的数据写入地址\codex{imm(rs1)} 处。应指出，I型指令和S型指令都使用了两个寄存器和一个立即数作为操作数，然而，前者为\codex{rs1,rd}，后者为\codex{rs1,rs2}。这是因为我们会用\codex{rs} 和\codex{rd} 来区分“源寄存器”和“目标寄存器”，前者只需要读，后者只需要写。
+    \item B型指令（Branch）：分支类型。操作数是\codex{imm,rs1,rs2}。这类指令覆盖了所有条件跳转指令，当\codex{rs1,rs2} 的数据满足这一指令的跳转条件时，令\codex{pc} 跳转至\codex{pc+imm} 处。
+    \item J型指令（Jump）：跳转类型。操作数是\codex{imm,rd}。这类指令仅有跳转并链接指令，其会将\codex{pc+4} 写入\codex{rd} 中并令\codex{pc} 跳转至\codex{pc+imm} 处。需要特别强调的是，尽管称为Jump，跳转并链接（\code{jal}）是唯一的J型指令！跳转至寄存器并链接（\code{jalr}）是一条I型指令。
+    \item U型指令（Upper Immediate）：高位立即数类型。操作数是\codex{imm,rd}。前述指令的立即数都只用了$12$位编码，故势必需要有一类指令能通过某种方式来操作立即数的高$20$位。
+\end{itemize}
+
+这六种指令类型的编码结构如\xref{fig:RISC-V指令类型}所示，其中要说明的三点是：首先，I型指令中，由于立即数位移涉及的立即数只需要$5$位（因为最大有意义的位移位数是$2^5=32$，更多没有实际意义了），故有必要分出I1型和I2型两个亚型用以区分。其次，有时我们会称RISC-V的指令类型是四种，这是指：R型指令、I型指令、S/B型指令、U/J型指令。其中，后两者使用合称的原因是，S型和B型中立即数都用12位编码，U型和J型中立即数都用20位编码，区别仅在于这些位数的编码会被分别映射到不同的立即数位上。例如，同样是用$12$位来编码立即数，S型指令是\codex{imm[11:0]}，B型指令是\codex{imm[12:1]}，这是根据指令对于立即数的实际用途确定的。最后，我们可能注意到立即数的编码有些混乱，有些被拆分为两端，有些有各别位很突兀的插入到别的地方。这是多方面妥协的结果：将立即数分段是为了保证\codex{rs1,rs2,rd} 等字段的位置在指令中保持不变。将立即数的各别位移动，是为了保证不同类型的指令间，能有尽可能多的立即数位是重合的（观察\xref{fig:RISC-V指令类型}每一行顶部的红色数字），减小硬件实现的开销。
+
 \begin{Figure}[RISC-V指令类型]
     \includegraphics[scale=0.8]{build/Chapter06B_01.fig.pdf}
 \end{Figure}
+
+上述都在讨论指令的操作数，我们还需要一些字段来编码指令本身，有三个部分
+\begin{itemize}
+    \item \codex{opcode}，共$7$位，所有指令有该字段。
+    \item \codex{funct3}，共$3$位，部分指令有该字段。
+    \item \codex{funct7}，共$7$位，仅有寄存器算数指令和立即数位移指令有该字段。
+\end{itemize}
+
+RISC-V编码指令的这三个字段\codex{opcode,funct3,funct7} 有很大冗余，扩展潜力很强。
+
+\subsection{R型指令}
+
+R型指令的编码结构、编码字段、包含的指令如\xref{fig:R型指令的编码}所示。
+\begin{Figure}[R型指令的编码]
+    \includegraphics[scale=0.8]{build/Chapter06B_02.fig.pdf}
+\end{Figure}
+
+\xref{tab:R型指令的列表}展示了全部的R型指令。R型指令只有一种\codex{opcode} 为\codex{OP(51):0110011}。通常我们会用字段\codex{opcode} 区分最基本的指令类型，例如这里\codex{opcode} 的代号\codex{OP} 就是值“运算指令”。
+
+R型指令都是寄存器的运算指令，大致可以分为四类：算数运算、位移运算、逻辑运算、比较运算。R型指令中每条指令间主要用\codex{funct3} 区分，但有两组指令，算数指令的\codex{add,sub} 和右移指令\codex{srl,sra} 具有相同的\codex{funct3}，通过\codex{funct7} 分别取\codex{0000000,0100000} 来区分“加/减”以及“逻辑右移/算数右移”。这里\codex{slt,sltu} 的比较指令是之前没有介绍过的，这两条指令会分别将\codex{rs1,rs2} 视为有符号数和无符号数进行小于比较，并将结果写入\codex{rd}。值得注意的是，仅有这两条指令并不能完备的表达所有比较运算，尚不清楚专门引入其的目的所在。
+\begin{Tablex}[R型指令的列表]{>{\ttfamily}p{9em}>{\ttfamily}Xc>{\ttfamily}c>{\ttfamily}c>{\ttfamily}c}
+    <\normalfont 指令&\normalfont 用途&类型&opcode&f3&f7\\>
+    add rd,rs1,rs2&rd=rs1+rs2&R&0110011&000&0000000\\
+    \mc{2}(l){Add}&\mc{4}(r){寄存器加法}\\ \hlinelig
+    sub rd,rs1,rs2&rd=rs1-rs2&R&0110011&000&0100000\\
+    \mc{2}(l){Sub}&\mc{4}(r){寄存器减法}\\ \hlinelig
+    sll rd,rs1,rs2&rd=rs1<<rs2[4:0]&R&0110011&001&0000000\\
+    \mc{2}(l){Shift Left Logical}&\mc{4}(r){寄存器逻辑左移}\\ \hlinelig
+    srl rd,rs1,rs2&rd=rs1>>rs2[4:0]&R&0110011&101&0000000\\
+    \mc{2}(l){Shift Right Logical}&\mc{4}(r){寄存器逻辑右移}\\ \hlinelig
+    sra rd,rs1,rs2&rd=rs1>>>rs2[4:0]&R&0110011&101&0100000\\
+    \mc{2}(l){Shift Right Arithmetic}&\mc{4}(r){寄存器算数右移}\\ \hlinelig
+    xor rd,rs1,rs2&rd=rs1\^{}rs2&R&0110011&100&0000000\\
+    \mc{2}(l){Xor}&\mc{4}(r){寄存器异或}\\ \hlinelig
+    or rd,rs1,rs2&rd=rs1|rs2&R&0110011&110&0000000\\
+    \mc{2}(l){Or}&\mc{4}(r){寄存器或}\\ \hlinelig
+    and rd,rs1,rs2&rd=rs1\&rs2&R&0110011&111&0000000\\
+    \mc{2}(l){And}&\mc{4}(r){寄存器与}\\ \hlinelig
+    slt rd,rs1,rs2&rd=(rs1<rs2)&R&0110011&010&0000000\\
+    \mc{2}(l){Set Less Than}&\mc{4}(r){寄存器当小于（有符号）时赋值}\\ \hlinelig
+    sltu rd,rs1,rs2&rd=(rs1<rs2)&R&0110011&011&0000000\\
+    \mc{2}(l){Set Less Than Unsigned}&\mc{4}(r){寄存器当小于（无符号）时赋值}\\ \hlinelig
+\end{Tablex}
+
+\subsection{I型指令}
+I型指令的编码结构、编码字段、包含的指令如\xref{fig:I型指令的编码}所示。
+
+\begin{Figure}[I型指令的编码]
+    \begin{FigureSub}[I1型指令的编码]
+        \includegraphics[scale=0.8]{build/Chapter06B_03.fig.pdf}
+    \end{FigureSub}\\ \vspace{0.5cm}
+    \begin{FigureSub}[I2型指令的编码]
+        \includegraphics[scale=0.8]{build/Chapter06B_04.fig.pdf}
+    \end{FigureSub}
+\end{Figure}
+\xref{tab:I型指令的列表}展示了全部的I型指令。I型指令有I1和I2两个变种。I1型是主要的，使用了$12$位的立即数。I2型则是对于立即数位移的一个变种，由于位移只需要$5$位立即数，多余的$7$位用来编码\codex{funct7} 。I型指令有\codex{OP-IMM(19):0010011,LOAD(3):0000011,JALR(103):1100111} 三种不同的\codex{opcode}，它们分别对应立即数运算指令、读取指令、跳转至寄存器并链接指令。
+
+\xref{tab:I型指令的列表}中在说明用途的伪代码中，有些符号需要解释一下
+\begin{itemize}
+    \item \codex{SE()} 表示SignExtend即有符号扩展至$32$位数。
+    \item \codex{ZE()} 表示ZeroExtend即无符号扩展至$32$位数。
+    \item \codex{[Address]} 表示存储器中地址为\codex{Address} 处的$32$位数据。
+\end{itemize}
+我们可以注意到，立即数采用的都是有符号扩展，实际上，这一点对于所有RISC-V指令的立即数都是成立的！当然，在I2型指令用于表示位移的$5$位立即数是无符号的，然而由于进行位移运算时，其只会考察最低的$5$位，故这里如何扩展是无关紧要的，不妨碍结论的成立。
+
+\begin{Tablex}[I型指令的列表]{>{\ttfamily}p{9em}>{\ttfamily}Xc>{\ttfamily}c>{\ttfamily}c>{\ttfamily}c}
+    <\normalfont 指令&\normalfont 用途&类型&opcode&f3&f7\\>
+    addi rd,rs1,imm&rd=rs1+SE(imm)&I1&0010011&000&-------\\
+    \mc{2}(l){Add Immediate}&\mc{4}(r){立即数加法}\\ \hlinelig
+    slli rd,rs1,imm&rd=rs1<<imm&I2&0010011&001&0000000\\
+    \mc{2}(l){Shift Left Logical Immediate}&\mc{4}(r){立即数逻辑左移}\\ \hlinelig
+    srli rd,rs1,imm&rd=rs1>>imm&I2&0010011&101&0000000\\
+    \mc{2}(l){Shift Right Logical Immediate}&\mc{4}(r){寄存器逻辑右移}\\ \hlinelig
+    srai rd,rs1,imm&rd=rs1>>>imm&I2&0010011&101&0100000\\
+    \mc{2}(l){Shift Right Arithmetic Immediate}&\mc{4}(r){立即数算数右移}\\ \hlinelig
+    xori rd,rs1,imm&rd=rs1\^{}SE(imm)&I1&0110011&100&-------\\
+    \mc{2}(l){Xor Immediate}&\mc{4}(r){立即数异或}\\ \hlinelig
+    ori rd,rs1,imm&rd=rs1|SE(imm)&I1&0110011&110&-------\\
+    \mc{2}(l){Or Immediate}&\mc{4}(r){立即数或}\\ \hlinelig
+    andi rd,rs1,imm&rd=rs1\&SE(imm)&I1&0110011&111&-------\\
+    \mc{2}(l){And Immediate}&\mc{4}(r){立即数与}\\ \hlinelig
+    slti rd,rs1,imm&rd=(rs1<SE(imm))&I1&0110011&010&-------\\
+    \mc{2}(l){Set Less Than Immediate}&\mc{4}(r){立即数当小于（有符号）时赋值}\\ \hlinelig
+    sltiu rd,rs1,imm&rd=(rs1<SE(imm))&I1&0110011&011&-------\\
+    \mc{2}(l){Set Less Than Immediate Unsigned}&\mc{4}(r){立即数当小于（无符号）时赋值}\\ \hlinelig
+    lb rd,imm(rs1)&rd=SE([rs1+SE(imm)][7:0])&I1&0000011&000&-------\\
+    \mc{2}(l){Load Byte}&\mc{4}(r){读取字节}\\ \hlinelig
+    lh rd,imm(rs1)&rd=SE([rs1+SE(imm)][15:0])&I1&0000011&001&-------\\
+    \mc{2}(l){Load Half}&\mc{4}(r){读取半字}\\ \hlinelig
+    lw rd,imm(rs1)&rd=[rs1+SE(imm)]&I1&0000011&010&-------\\
+    \mc{2}(l){Load Word}&\mc{4}(r){读取字}\\ \hlinelig
+    lbu rd,imm(rs1)&rd=ZE([rs1+SE(imm)][7:0])&I1&0000011&100&-------\\
+    \mc{2}(l){Load Byte Unsigned}&\mc{4}(r){读取无符号字节}\\ \hlinelig
+    lhu rd,imm(rs1)&rd=ZE([rs1+SE(imm)][15:0])&I1&0000011&101&-------\\
+    \mc{2}(l){Load Half Unsigned}&\mc{4}(r){读取无符号半字}\\ \hlinelig
+    jalr rd,rs1,imm&rd=pc+4, pc=rs1+SE(imm)&I1&1100111&000&-------\\
+    \mc{2}(l){Jump and Link Register}&\mc{4}(r){跳转至寄存器并链接}\\ \hlinelig
+\end{Tablex}
+
+除此之外，\xref{tab:I型指令的列表}中有关读取指令的伪代码表示仅在逻辑上是正确的，例如，可以考察字节读取指令\codex{lb rd,imm(rs1)}，其用途被记为\codex{rd=SE([rs1+SE(imm)][7:0])}，不妨假设\codex{rs1=0} 而\codex{imm=5}，存储器的地址看起来是\codex{0123,4567,89AB,...}，按照这一伪代码，我们将读取\codex{5678} 这个字，并从中获得最低的那一字节即\codex{5}处的数据。然而，存储器往往并不能支持这样非对齐的字访问，实现上正确的做法应该是先设法读取\codex{4567} 的字，再从其中读取出\codex{5} 这个字节。
+
+\subsection{S/B型指令}
+
+S型指令和B型指令的编码结构、编码字段、包含的指令如\xref{fig:S型指令的编码}和\xref{fig:B型指令的编码}所示。
+\begin{Figure}[S型指令的编码]
+    \includegraphics[scale=0.8]{build/Chapter06B_05.fig.pdf}
+\end{Figure}
+
+\begin{Figure}[B型指令的编码]
+    \includegraphics[scale=0.8]{build/Chapter06B_06.fig.pdf}
+\end{Figure}
+
+\begin{Tablex}[S/B型指令的列表]{>{\ttfamily}p{9em}>{\ttfamily}Xc>{\ttfamily}c>{\ttfamily}c>{\ttfamily}c}
+    <\normalfont 指令&\normalfont 用途&类型&opcode&f3&f7\\>
+    sb rs2,imm(rs1)&[rs1+SE(imm)][7:0]=rs2[7:0]&S&0100011&000&-------\\
+    \mc{2}(l){Store Byte}&\mc{4}(r){存储字节}\\ \hlinelig
+    sh rs2,imm(rs1)&[rs1+SE(imm)][15:0]=rs2[15:0]&S&0100011&001&-------\\
+    \mc{2}(l){Store Half}&\mc{4}(r){存储半字}\\ \hlinelig
+    sw rs2,imm(rs1)&[rs1+SE(imm)]=rs2&S&0100011&010&-------\\
+    \mc{2}(l){Store Word}&\mc{4}(r){存储字}\\ \hlinelig
+    beq rs1,rs2,lab&if(rs1==rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&000&-------\\
+    \mc{2}(l){Branch If Equal}&\mc{4}(r){若相等则跳转}\\ \hlinelig
+    bne rs1,rs2,lab&if(rs1!=rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&001&-------\\
+    \mc{2}(l){Branch If Not Equal}&\mc{4}(r){若不等则跳转}\\ \hlinelig
+    blt rs1,rs2,lab&if(rs1< rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&100&-------\\
+    \mc{2}(l){Branch If Less Than}&\mc{4}(r){若小于（有符号）则跳转}\\ \hlinelig
+    bltu rs1,rs2,lab&if(rs1< rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&110&-------\\
+    \mc{2}(l){Branch If Less Than Unsigned}&\mc{4}(r){若小于（无符号）则跳转}\\ \hlinelig
+    bge rs1,rs2,lab&if(rs1>=rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&100&-------\\
+    \mc{2}(l){Branch If Greater Than or Equal}&\mc{4}(r){若大等（有符号）则跳转}\\ \hlinelig
+    bgeu rs1,rs2,lab&if(rs1>=rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&110&-------\\
+    \mc{2}(l){Branch If Greater Than or Equal Unsigned}&\mc{4}(r){若大等（无符号）则跳转}\\
+\end{Tablex}
+
+\xref{tab:S/B型指令的列表}展示了全部的S/B型指令，S型指令只有\codex{STORE(35):0100011} 一种\codex{opcode}，代表存储指令，B型指令只有\codex{BRANCH(99)} 一种\codex{opcode}，代表分支指令。这里需要重点解释的是分支指令。首先，在汇编语言中，分支指令都是以标签\codex{lab} 的形式指定跳转位置的，然而，将汇编代码转换为机器代码时，这些标签对应的指令地址会被转换为相对于当前指令地址的一个立即数偏移。其次，B型指令的立即数编码的是\codex{imm[12:1]}，这实际上代表了一个$13$位的立即数，其中最低位\codex{imm[0]} 恒定为\codex{0}。这一设计的原因是，RISC-V指令都是$32$位的，即便考虑到RISC-V的$16$位的压缩指令的扩展，任何一条指令的地址至少都是$2$的倍数（通常是$4$的倍数），使用最低位恒为\codex{0} 的$13$位立即数相较$12$位立即数可以获得更大的跳转范围。
+
+\subsection{U/J型指令}
+
+U型指令和J型指令的编码结构、编码字段、包含的指令如\xref{fig:U型指令的编码}和\xref{fig:J型指令的编码}所示。
+\begin{Figure}[J型指令的编码]
+    \includegraphics[scale=0.8]{build/Chapter06B_07.fig.pdf}
+\end{Figure}
+
+\begin{Figure}[U型指令的编码]
+    \includegraphics[scale=0.8]{build/Chapter06B_08.fig.pdf}
+\end{Figure}
+
+\xref{tab:S/B型指令的列表}展示了全部的U/J型指令，这两类指令的数量都很有限，J型指令仅有\codex{jal} 一条，U型指令仅有\codex{lui,auipc} 两条。同时，由于U/J型指令都使用了$20$位编码立即数，因此其中能用于编码指令本身的字段就只有\codex{opcode} 了（过去主要用\codex{funct3} 区分），所以这里都是一条指令对应一个\codex{opcode}，依次是\codex{JAL(111):1101111,LUI(55):0110111,AUIPC(23):0010111}。
+
+U/J型都用$20$位编码的立即数，两者的处理各不相同
+\begin{itemize}
+    \item J型中使用$21$位立即数\codex{imm[20:1]}，同样是出于指令地址至少是$2$的倍数的考虑。
+    \item U型中使用$32$位立即数\codex{imm[31:12]}，其中低$12$位直接填codex{0}，因为U型指令本身就是用于加载高$20$位。联用\codex{lui,addi} 就可以将任意$32$位数加载到一个寄存器中。
+\end{itemize}
+
+这里我们总结一下与\codex{pc} 相关的指令
+\begin{itemize}
+    \item \code{jal rd,lab}，属于J型指令，也是唯一的J型指令，立即数为$21$位。
+    \item \code{jalr rd,rs1,imm}，属于I型指令，立即数为$12$位。注意，这与以当前地址为基准偏移的B型指令和J型指令分别使用最低位恒\codex{0} 的$13$位立即数和$21$位立即数不同。故编码\codex{jalr} 中的立即数时，我们不需要将地址偏移除以$2$！这一设计也可能是多方面考虑的结果。首先，\codex{jalr} 的跳转是以寄存器为基础偏转的，灵活性已经很强了，纠结这$1$位带来的范围减小意义不大。其次，\codex{jalr} 的立即数结构受限于I型指令本身，若需要将其改为$13$位，需要再从I型指令分出一个类型，这无疑会增加硬件实现的复杂些。
+    \item \code{auipc rd,imm}，属于U型指令，立即数为$32$位。这一指令也是过去没有出现过的，其并不是一条跳转指令，而是将当前\codex{pc} 简单的与一个高位立即数相加并保存到\codex{rd} 中。该指令可以用于获得当前\codex{pc}，另外，通过\codex{auipc,jalr} 的联用，实现$32$位偏移的大跳。
+\end{itemize}
+
+\begin{Tablex}[U/J型指令的列表]{>{\ttfamily}p{9em}>{\ttfamily}Xc>{\ttfamily}c>{\ttfamily}c>{\ttfamily}c}
+    <\normalfont 指令&\normalfont 用途&类型&opcode&f3&f7\\>
+    jal rd,lab&rd=pc+4, pc=pc+SE(\{imm,1'b0\})&J&1101111&---&-------\\
+    \mc{2}(l){Jump and Link}&\mc{4}(r){跳转并链接}\\ \hlinelig
+    lui rd,imm&rd=\{imm,12'b0\}&U&0110111&---&-------\\
+    \mc{2}(l){Load Upper Immediate}&\mc{4}(r){加载高位立即数}\\ \hlinelig
+    auipc rd,imm&rd=pc+\{imm,12'b0\}&U&0010111&---&-------\\
+    \mc{2}(l){Add Upper Immediate to PC}&\mc{4}(r){将当前地址与高位立即数相加}\\
+\end{Tablex}
