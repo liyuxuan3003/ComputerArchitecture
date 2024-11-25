@@ -2,8 +2,8 @@ main:                   # <main>
 # >> Call func1 start
 li a0,25                # x1=25
 li a1,20                # x2=20
-li a3,15                # y1=15
-li a4,10                # y2=10
+li a2,15                # y1=15
+li a3,10                # y2=10
 jal,func1               # func1(25,20,15,10)
 mv s0,a0                # val=func1(25,20,15,10)
 # >> Call func1 end

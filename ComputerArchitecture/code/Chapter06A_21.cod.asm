@@ -3,14 +3,14 @@
 # ---------------- #
 # blt  -> (< ) Branch if Less Than
 # bltu -> (< ) Branch if Less Than          (Unsigned)
-# ble  -> (<=) Branch if Less and Equal                 *ps of bgt
-# bleu -> (<=) Branch if Less and Equal     (Unsigned)  *ps of bgtu
+# ble  -> (<=) Branch if Less and Equal                 *ps of bge
+# bleu -> (<=) Branch if Less and Equal     (Unsigned)  *ps of bgeu
 # ---------------- #
-# bgt  -> (> ) Branch if Greater Than                   *ps of ble
-# bgtu -> (> ) Branch if Greater Than       (Unsigned)  *ps of bgtu
+# bgt  -> (> ) Branch if Greater Than                   *ps of blt
+# bgtu -> (> ) Branch if Greater Than       (Unsigned)  *ps of bltu
 # bge  -> (>=) Branch if Greater and Equal              
 # bgeu -> (>=) Branch if Greater and Equal  (Unsigned)  
-
+# ---------------- #
 
 li s0,0             # 0x00010000 s0=0
 addi s0,s0,1        # 0x00010004 s0=s0+1
