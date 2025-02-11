@@ -1,1 +1,31 @@
 \ProvidesPackage{Local}
+
+\tikzset{line data/.style={thick}}
+\tikzset{line control/.style={thin}}
+
+\ctikzset{multipoles/external pins width=0.0}
+\ctikzset{multipoles/thickness=1.0}
+
+\tikzset{digital/.style={line width=1.0pt,font=\rmfamily,align=center}}
+
+\tikzset{add/.style={muxdemux,digital,muxdemux def={Lh=5.0,Rh=4.0,NL=2,NR=3,NT=1,NB=0,w=2.0,inset w=1.0,inset Lh=1.0,inset Rh=0.0}}}
+
+\tikzset{mux21/.style={muxdemux,digital,muxdemux def={Lh=2.40,Rh=1.92,NL=2,NR=1,NT=0,NB=0,w=0.96}}}
+
+\tikzset{mux31/.style={muxdemux,digital,muxdemux def={Lh=2.88,Rh=2.40,NL=3,NR=1,NT=0,NB=0,w=0.96}}}
+
+\tikzset{mem/.style={draw,digital,inner sep=0cm,minimum width=2.5cm,minimum height=4.0cm}}
+
+\tikzset{regfile/.style={draw,digital,inner sep=0cm,minimum width=3.0cm,minimum height=4.0cm}}
+
+\tikzset{control/.style={draw,digital,inner sep=0cm,minimum width=1.5cm,minimum height=6.0cm}}
+
+\tikzset{register1/.style={draw,digital,inner sep=0cm,minimum width=0.6cm,minimum height=1.5cm}}
+
+\tikzset{register2/.style={draw,digital,inner sep=0cm,minimum width=0.6cm,minimum height=3.0cm}}
+
+\tikzset{extend/.style={draw,digital,inner sep=0cm,trapezium,trapezium left angle=90,trapezium right angle=85,shape border rotate=90,minimum width=0.3cm,minimum height=3.0cm}}
+
+\tikzset{clk/.style={draw,anchor=north,thick,inner sep=0cm,isosceles triangle,shape border rotate=-90,isosceles triangle stretches,minimum width=0.5cm,minimum height=0.25cm}}
+
+\tikzset{muxopt/.style={right,inner sep=0.15em,font=\ttfamily\small}}
