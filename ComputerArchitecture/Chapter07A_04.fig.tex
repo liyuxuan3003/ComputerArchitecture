@@ -1,0 +1,25 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}[font=\ttfamily]
+
+% REG
+\path (0,0) node[register,minimum height=3.5cm] (REG) {};
+
+% ---- Clock Mark ---- %
+\foreach \block/\x in
+{
+    REG/0.5%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) node[clk] (\block -CLK) {};
+    \draw[line control] (\block -CLK) -- ++(0,0.5) node[ocirc] {} node[above] {CLK};
+}
+
+\draw (REG.west) -- ++(-0.5,0);
+\draw (REG.east) -- ++(+0.5,0);
+
+\draw ($(REG.south west)+(-0.9,-0.9)$) rectangle ($(REG.north east)+(0.9,0.9)$);
+
+\end{tikzpicture}
+\end{document}

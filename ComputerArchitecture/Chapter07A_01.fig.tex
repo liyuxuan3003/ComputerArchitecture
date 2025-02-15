@@ -1,0 +1,25 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}[font=\ttfamily]
+
+% IMEM
+\path (0,0) node[mem] (IMEM) {Instr\\ Memory};
+
+% Marker on IMEM/DMEM/REGFILE
+\foreach \block/\n/\side/\text in
+{%
+    IMEM/1/west/A,
+    IMEM/1/east/RD%
+}%
+{
+    \path ($(\block.north \side)!\fpeval{0.2+0.2*(\n-1)}!(\block.south \side)$) coordinate (\block -\text) node[anchor=\side] {\text};
+}
+
+\draw (IMEM-A) -- ++(-0.5,0);
+\draw (IMEM-RD) -- ++(0.5,0);
+
+\draw ($(IMEM.south west)+(-0.9,-0.9)$) rectangle ($(IMEM.north east)+(0.9,0.9)$);
+
+\end{tikzpicture}
+\end{document}

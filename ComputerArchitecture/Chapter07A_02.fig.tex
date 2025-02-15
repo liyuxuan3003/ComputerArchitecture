@@ -1,0 +1,47 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}[font=\ttfamily]
+
+% DMEM
+\path (0,0) node[mem] (DMEM) {Data\\ Memory};
+
+% Marker on IMEM/DMEM/REGFILE
+\foreach \block/\n/\side/\text in
+{%
+    DMEM/1/west/A,
+    DMEM/1/east/RD,
+    DMEM/4/west/WD%
+}%
+{
+    \path ($(\block.north \side)!\fpeval{0.2+0.2*(\n-1)}!(\block.south \side)$) coordinate (\block -\text) node[anchor=\side] {\text};
+}
+
+% ---- Clock Mark ---- %
+\foreach \block/\x in
+{
+    DMEM/0.33%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) node[clk] (\block -CLK) {};
+    \draw[line control] (\block -CLK) -- ++(0,0.5) node[ocirc] {} node[above] {CLK};
+}
+
+% ---- WE Mark ---- %
+\foreach \block/\x in
+{
+    DMEM/0.67%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) coordinate (\block -WE) node[below] {WE};
+}
+
+\draw (DMEM-A) -- ++(-0.5,0);
+\draw (DMEM-WD) -- ++(-0.5,0);
+\draw (DMEM-RD) -- ++(0.5,0);
+\draw (DMEM-WE) -- ++(0,0.5);
+
+\draw ($(DMEM.south west)+(-0.9,-0.9)$) rectangle ($(DMEM.north east)+(0.9,0.9)$);
+
+\end{tikzpicture}
+\end{document}

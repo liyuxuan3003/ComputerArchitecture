@@ -3,32 +3,280 @@
 \begin{document}
 \begin{tikzpicture}[font=\ttfamily]
 
-\draw (0,0) node[add] (ALU) {\rotatebox{90}{ALU}};
+\path (0,0)  coordinate (xL)
+    ++(26,0) coordinate (xR);
 
-\draw (3,0) node[mux21] (MUX21) {};
-\path (MUX21.blpin 1) node[muxopt] {0};
-\path (MUX21.blpin 2) node[muxopt] {1};
+\path (0,0) coordinate (yC);
 
-\draw (6,0) node[mux31] (MUX31) {};
-\path (MUX31.blpin 1) node[muxopt] {00};
-\path (MUX31.blpin 2) node[muxopt] {01};
-\path (MUX31.blpin 3) node[muxopt] {10};
+\path (0,-8.25) coordinate (yB);
+\path (0,10.00) coordinate (yA);
 
-\draw (10,0) node[mem] (MEM) {};
-\draw (15,0) node[regfile] (REGFILE) {Register\\ File};
-\path (REGFILE.west) node[right] {A1};
+\draw[ultra thin] (xL|-yB) rectangle (xR|-yA);
 
-\draw (15,-3) node[extend] (IMMEXT) {Extend};
+% IMEM
+\path (xL|-yC) ++(5.0,0) node[mem,anchor=west] (IMEM) {Instr\\ Memory};
 
-\draw (14,6) node[control] (CONT) {Control \\ Unit};
+% DMEM
+\path (xR|-yC) ++(-3.5,0) node[mem,anchor=east] (DMEM) {Data\\ Memory};
 
-\draw (6,6) node[register1] (REG) {};
-\draw (8,6) node[register2] {};
+% REGFILE
+\path (IMEM.east) ++(2.5,0) node[regfile,anchor=west] (REGFILE) {Register\\ File};
 
-\path (REG.north) node[clk] {};
+% Marker on IMEM/DMEM/REGFILE
+\foreach \block/\n/\side/\text in
+{%
+    IMEM/1/west/A,
+    IMEM/1/east/RD,
+    DMEM/1/west/A,
+    DMEM/1/east/RD,
+    DMEM/4/west/WD,
+    REGFILE/1/west/A1,
+    REGFILE/2/west/A2,
+    REGFILE/3/west/A3,
+    REGFILE/4/west/WD3,
+    REGFILE/1/east/RD1,
+    REGFILE/2/east/RD2%
+}%
+{
+    \path ($(\block.north \side)!\fpeval{0.2+0.2*(\n-1)}!(\block.south \side)$) coordinate (\block -\text) node[anchor=\side] {\text};
+}
 
-\draw[line data] (0,0) -- ++ (3,0);
-\draw (0,1) -- ++ (0,3);
+% ---- Around IMEM ---- %
+
+% REG PC
+\path (IMEM-A) ++ (-1.0,0) node[register,anchor=east] (REGPC) {};
+
+% MUX PCNext
+\path (xL|-REGPC.west) ++(1.5,0) node[mux21,anchor=west] (MUXPCNext) {};
+
+% ADD PCPlus4
+\path (IMEM.south west) ++ (0,-2.0) node[add,anchor=north west] (ADDPCPlus4) {\rotatebox{90}{ADD}};
+
+% ---- Around REGFILE ---- %
+
+% IMM Extend
+\path (REGFILE.south) ++ (0,-2.0) node[extend,anchor=north] (IMMExtend) {Extend};
+
+% ALU
+\path (DMEM-A) ++ (-2.75,0) node[add,anchor=brpin 2] (ALU) {\rotatebox{90}{ALU}};
+
+% MUX SrcB
+\path (ALU.blpin 2) ++(-1,0) node[mux21,anchor=brpin 1] (MUXSrcB) {}; 
+
+% ADD PCTarget
+\path (ALU.blpin 1|-IMMExtend.east) node[add,anchor=blpin 2] (ADDPCTarget) {\rotatebox{90}{ADD}};
+
+% Control Unit
+\path (REGFILE.north west) ++ (0,1.5) node[control,anchor=south west] (ControlUnit) {Control\\ Unit};
+
+% ---- Around DMEM ---- %
+
+% MUX Result
+\path (xR|-DMEM-RD) ++(-1.5,0) node[mux31,anchor=blpin 2] (MUXResult) {};
+
+% ---- Control Unit Signal ----%
+\foreach \n/\side/\text/\label in
+{
+    1/west/PCSrc/PCSrc,
+    1/east/ResultSrc[1:0]/ResultSrc,
+    2/east/MemWrite/MemWrite,
+    3/east/ALUControl[2:0]/ALUControl,
+    4/east/ALUSrcB/ALUSrcB,
+    5/east/ImmSrc[1:0]/ImmSrc,
+    6/east/RegWrite/RegWrite%
+}
+{
+    \ifthenelse{\equal{\side}{west}}{\def\direction{above left}}{\def\direction{above right}}
+    \path ($(ControlUnit.north \side)!\fpeval{(0.5/9)+(1/9)*(\n-1)}!(ControlUnit.south \side)$) coordinate (CU-\label) node[\direction,inner ysep=0.4ex] {\text\vphantom{hg}};
+}
+
+\foreach \n/\side/\text/\label in
+{
+    6/west/op/op,
+    7/west/funct3/funct3,
+    8/west/funct7/funct7,
+    9/west/Zero/Zero%
+}
+{
+    \path ($(ControlUnit.north \side)!\fpeval{(0.5/9)+(1/9)*(\n-1)}!(ControlUnit.south \side)$) coordinate (CU-\label) node[right] {\text};
+}
+
+% ---- Clock Mark ---- %
+\foreach \block/\x in
+{
+    REGPC/0.5,
+    REGFILE/0.33,
+    DMEM/0.33%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) node[clk] (\block -CLK) {};
+    \draw[line control] (\block -CLK) -- ++(0,0.5) node[ocirc] {} node[above] {CLK};
+}
+
+% ---- WE Mark ---- %
+\foreach \block/\x in
+{
+    REGFILE/0.67,
+    DMEM/0.67%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) coordinate (\block -WE) node[below] {WE};
+}
+
+% ---- Mux21 Mark ---- %
+\foreach \mux in {MUXPCNext,MUXSrcB}
+{
+    \path (\mux.blpin 1) node[muxopt] {0};
+    \path (\mux.blpin 2) node[muxopt] {1};
+}
+
+% ---- Mux31 Mark ---- %
+\foreach \mux in {MUXResult}
+{
+    \path (\mux.blpin 1) node[muxopt] {00};
+    \path (\mux.blpin 2) node[muxopt] {01};
+    \path (\mux.blpin 3) node[muxopt] {10};
+}
+
+% ---- X ---- %
+\path (MUXPCNext.blpin 1) ++(-0.25,0) coordinate (xMUXPCNextin1);
+\path (MUXPCNext.blpin 2) ++(-0.75,0) coordinate (xMUXPCNextin2);
+
+\path (ADDPCPlus4.east) ++(0.5,0) coordinate (xPCPlus4);
+
+\path ($(REGPC.east)!0.5!(IMEM.west)$) coordinate (xPC);
+
+\path ($(IMEM.east)!0.63!(REGFILE.west)$) coordinate (xInstr);
+
+\path (REGFILE.east) ++(0.5,0) coordinate (xImmSrc);
+
+\path (REGFILE.east) ++(0.5,0) coordinate (xPCSrc);
+
+\path (MUXSrcB.blpin 1) ++(-1.0,0) coordinate (xMUXSrcBin1);
+\path (MUXSrcB.blpin 2) ++(-0.5,0) coordinate (xMUXSrcBin2);
+
+\path (ALU.brpin 1) ++(1.2,0) coordinate (xZero);
+
+\path (ControlUnit.west) ++(-0.25,0) coordinate (xZeroCU);
+
+\path (DMEM.west) ++(-0.25,0) coordinate (xALUResult);
+
+\path (MUXResult.west) ++(-0.5,0) coordinate (xMUXResultin);
+
+\path (MUXResult.east) ++(0.25,0) coordinate (xResult);
+
+\path (xInstr) ++(-0.5,0) coordinate (xResultWB);
+
+\path (ADDPCTarget.east) ++(1.00,0) coordinate (xPCTarget);
+
+% ---- Y ---- %
+\path (ADDPCPlus4.south) ++ (0,-0.5) coordinate (yPCPlus4) ++(0,-0.5) coordinate (yPCTarget);
+
+\path (ADDPCPlus4.brpin 2) ++(0,-0.8) coordinate (yResultWB);
+
+\path (ADDPCTarget.blpin 1) ++(0,-0.5) coordinate (yImmSrc);
+
+\path (ControlUnit.south) ++(0,-0.5) coordinate (yZeroCU);
+
+\path (DMEM.north) ++ (0,1.5) coordinate (yALUResult);
+
+% ---- Line Data ---- %
+
+% MUXPCNext ->[PCNext] REGPC
+\draw[line data] (MUXPCNext.brpin 1) -- node[above] {PCNext} (REGPC.west);
+
+% REGPC ->[PC] IMEM.A
+\draw[line data] (REGPC.east) -- node[above] {PC} (IMEM-A);
+
+% IMEM -[Instr] |
+\draw[line data] (IMEM-RD) -- node[above] {Instr} (xInstr|-IMEM-RD);
+\draw[line data] (xInstr|-CU-op) -- (xInstr|-IMMExtend.west);
+
+% IMEM Split
+\foreach \y/\bmax/\bmin in {CU-op/06/00,CU-funct3/14/12,CU-funct7/31/25,REGFILE-A1/19/15,REGFILE-A2/24/20,REGFILE-A3/11/07,IMMExtend.west/31/07}
+{
+    \draw[line data] (xInstr|-\y) node[above right] {\scalebox{0.5}{[\bmax :\bmin]}} -- (\y);
+}
+
+\foreach \y in {CU-funct3,CU-funct7,REGFILE-A1,REGFILE-A2,REGFILE-A3}
+{
+    \path (xInstr|-\y) node[circ] {};
+}
+
+% REGFILE.RD1 ->[SrcA] ALU.in1
+\draw[line data] (REGFILE-RD1) -|
+ (xMUXSrcBin1|-ALU.blpin 1) -- (ALU.blpin 1) node[above left] {SrcA};
+
+% MUXSrcB ->[SrcB] ALU.in2
+\draw[line data] (MUXSrcB.brpin 1) -- (ALU.blpin 2) node[above left] {SrcB};
+
+% REGFILE.RD2 -> MUXSrcB.in1
+\draw[line data] (REGFILE-RD2) -- (xMUXSrcBin1|-REGFILE-RD2) |- (MUXSrcB.blpin 1);
+
+% IMEM.RD2 -> DMEM.WD
+\draw[line data] (xMUXSrcBin1|-REGFILE-RD2) node[circ] {} |- (DMEM-WD);
+
+% Extend ->[ImmExt] ADDPCTarget.in2
+\draw[line data] (IMMExtend.east) node[above right] {ImmExt} -- (ADDPCTarget.blpin 2);
+
+% Extend -> MUXSrcB.in2
+\draw[line data] (xMUXSrcBin2|-IMMExtend.east) node[circ] {} |- (MUXSrcB.blpin 2);
+
+% PC -> ADDPCPlus4.in1
+\draw[line data] (xPC|-IMEM-A) node[circ] {} |- (ADDPCPlus4.blpin 1);
+
+% PC -> ADDPCTarget.in1
+\draw[line data] (xPC|-ADDPCTarget.blpin 1) node[circ] {} -- (ADDPCTarget.blpin 1);
+
+% 4 -> ADDPCPlus4.in2
+\draw[line data] (xPC|-ADDPCPlus4.blpin 2) node[ocirc] {} node[left] {4} -- (ADDPCPlus4.blpin 2);
+
+% ADDPCPlus4.out -> MUXPCNext.in1
+\draw[line data] (ADDPCPlus4.brpin 2) node[above right] {PCPlus4} -- (xPCPlus4|-ADDPCPlus4.brpin 2) |- (xMUXPCNextin1|-yPCPlus4) |- (MUXPCNext.blpin 1);
+
+% ALU.out ->[ALUResult] DMEM.A
+\draw[line data] (ALU.brpin 2) node[above right] {ALUResult} -- (DMEM-A);
+
+% ALU.out -> MUXResult.in1
+\draw[line data] (xALUResult|-DMEM-A) node[circ] {} |- (xMUXResultin|-yALUResult) |- (MUXResult.blpin 1);
+
+% DMEM.RD ->[ReadData] MUXResult.in2
+\draw[line data] (DMEM-RD) -- node[above] {ReadData} (MUXResult.blpin 2);
+
+% ADDPCPlus4.out -> MUXResult.in3
+\draw[line data] (xPCPlus4|-ADDPCPlus4.brpin 2) node[circ] {} -| (xMUXResultin|-MUXResult.blpin 3) -- (MUXResult.blpin 3);
+
+% MUXRestult.out -> REGFILE.WD3
+\draw[line data] (MUXResult.brpin 1) -| (xResult|-yResultWB) node[above left] {Result} -| (xResultWB|-REGFILE-WD3) -- (REGFILE-WD3);
+
+% ADDPCTarget
+\draw[line data] (ADDPCTarget.brpin 2) node[above right] {PCTarget} -| (xPCTarget|-yPCTarget) -| (xMUXPCNextin2|-MUXPCNext.blpin 2) -- (MUXPCNext.blpin 2);
+
+% ---- Line Control ---- %
+
+% RegWrite -> REGFILE.WE
+\draw[line control] (CU-RegWrite) -| (REGFILE-WE);
+
+% ImmSrc -> Extend
+\draw[line control] (CU-ImmSrc) -| (xImmSrc|-yImmSrc) -| (IMMExtend.north);
+
+% ALUSrcB -> MUXSrcB
+\draw[line control] (CU-ALUSrcB) -| (MUXSrcB.btpin 1);
+
+% ALUControl -> ALU
+\draw[line control] (CU-ALUControl) -| (ALU.btpin 1);
+
+% MEMWrite -> DMEM
+\draw[line control] (CU-MemWrite) -| (DMEM-WE);
+
+% ResultSrc -> MUXResult
+\draw[line control] (CU-ResultSrc) -| (MUXResult.btpin 1);
+
+% PCSrc -> MUXPCNext
+\draw[line control] (CU-PCSrc) -| (MUXPCNext.btpin 1);
+
+% ALU.Zero -> ControlUnit.Zero
+\draw[line control] (ALU.brpin 1) node[above right] {Zero} -| (xZero|-yZeroCU) -| (xZeroCU|-CU-Zero) -- (CU-Zero);
 
 \end{tikzpicture}
 \end{document}

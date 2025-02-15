@@ -1,0 +1,53 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}[font=\ttfamily]
+
+% REGFILE
+\path (0,0) node[regfile] (REGFILE) {Register\\ File};
+
+% Marker on IMEM/DMEM/REGFILE
+\foreach \block/\n/\side/\text in
+{%
+    REGFILE/1/west/A1,
+    REGFILE/2/west/A2,
+    REGFILE/3/west/A3,
+    REGFILE/4/west/WD3,
+    REGFILE/1/east/RD1,
+    REGFILE/2/east/RD2%
+}%
+{
+    \path ($(\block.north \side)!\fpeval{0.2+0.2*(\n-1)}!(\block.south \side)$) coordinate (\block -\text) node[anchor=\side] {\text};
+}
+
+% ---- Clock Mark ---- %
+\foreach \block/\x in
+{
+    REGFILE/0.33%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) node[clk] (\block -CLK) {};
+    \draw[line control] (\block -CLK) -- ++(0,0.5) node[ocirc] {} node[above] {CLK};
+}
+
+% ---- WE Mark ---- %
+\foreach \block/\x in
+{
+    REGFILE/0.67%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) coordinate (\block -WE) node[below] {WE};
+}
+
+\draw (REGFILE-A1) -- ++(-0.5,0);
+\draw (REGFILE-A2) -- ++(-0.5,0);
+\draw (REGFILE-A3) -- ++(-0.5,0);
+\draw (REGFILE-WD3) -- ++(-0.5,0);
+\draw (REGFILE-RD1) -- ++(+0.5,0);
+\draw (REGFILE-RD2) -- ++(+0.5,0);
+\draw (REGFILE-WE) -- ++(0,+0.5);
+
+\draw ($(REGFILE.south west)+(-0.9,-0.9)$) rectangle ($(REGFILE.north east)+(0.9,0.9)$);
+
+\end{tikzpicture}
+\end{document}
