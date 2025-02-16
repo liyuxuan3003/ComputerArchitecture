@@ -1,7 +1,14 @@
 \ProvidesPackage{Local}
 
-\tikzset{line data/.style={thick}}
-\tikzset{line control/.style={thin}}
+\tikzset{line data/.style={thick,black,color=black}}
+\tikzset{line control/.style={thin,black,color=black}}
+\tikzset{emph data/.style={very thick,red,color=red,-latex}}
+\tikzset{emph control/.style={semithick,blue,color=blue,-latex}}
+\tikzset{emph data no arrow/.style={very thick,red,color=red}}
+\tikzset{emph control no arrow/.style={thin,blue,color=blue}}
+
+\tikzset{signal/.style={black}}
+\tikzset{value/.style={font=\small\ttfamily,inner sep=2.0pt}}
 
 \ctikzset{multipoles/external pins width=0.0}
 \ctikzset{multipoles/thickness=1.0}
