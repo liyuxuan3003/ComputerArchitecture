@@ -193,12 +193,12 @@
 \draw[emph data no arrow] (xInstr|-CU-op) -- (xInstr|-IMMExtend.west);
 
 % IMEM Split
-\foreach \y/\bmax/\bmin/\type/\val in {CU-op/06/00/emph data/,CU-funct3/14/12/emph data/,CU-funct7/31/25/emph data/,REGFILE-A1/19/15/emph data/xrs1,REGFILE-A2/24/20/emph data/xrs2,REGFILE-A3/11/07/emph data/xrd,IMMExtend.west/31/07/line data/}
+\foreach \y/\bmax/\bmin/\type/\val in {CU-op/06/00/emph data/,CU-funct3/14/12/emph data/,CU-funct7/31/25/emph data/,REGFILE-A1/19/15/emph data/xrs1,REGFILE-A2/24/20/line data/,REGFILE-A3/11/07/emph data/xrd,IMMExtend.west/31/07/emph data/ximm}
 {
     \draw[\type] (xInstr|-\y) node[above right,signal] {\scalebox{0.5}{[\bmax :\bmin]}} node[below right,value] {\val} -- (\y);
 }
 
-\foreach \y/\type in {CU-funct3/emph data,CU-funct7/emph data,REGFILE-A1/emph data,REGFILE-A2/emph data,REGFILE-A3/emph data}
+\foreach \y/\type in {CU-funct3/emph data,CU-funct7/emph data,REGFILE-A1/emph data,REGFILE-A2/line data,REGFILE-A3/emph data}
 {
     \path (xInstr|-\y) node[circ,\type] {};
 }
@@ -207,20 +207,20 @@
 \draw[emph data] (REGFILE-RD1) -- (xMUXSrcBin1|-REGFILE-RD1) node[below left,value] {rs1} -- (xMUXSrcBin1|-ALU.blpin 1) -- (ALU.blpin 1) node[above left,signal] {SrcA} node[below left,value] {rs1};
 
 % MUXSrcB ->[SrcB] ALU.in2
-\draw[emph data] (MUXSrcB.brpin 1) -- (ALU.blpin 2) node[above left,signal] {SrcB} node[below left,value] {rs2};
+\draw[emph data] (MUXSrcB.brpin 1) -- (ALU.blpin 2) node[above left,signal] {SrcB} node[below left,value] {imm};
 
 % REGFILE.RD2 -> MUXSrcB.in1
-\draw[emph data] (REGFILE-RD2) -- (xMUXSrcBin1|-REGFILE-RD2) node[below left,value] {rs2} |- (MUXSrcB.blpin 1);
+\draw[line data] (REGFILE-RD2) -- (xMUXSrcBin1|-REGFILE-RD2) |- (MUXSrcB.blpin 1);
 
 % IMEM.RD2 -> DMEM.WD
-\draw[line data] (xMUXSrcBin1|-REGFILE-RD2) node[circ,emph data] {} |- (DMEM-WD);
+\draw[line data] (xMUXSrcBin1|-REGFILE-RD2) node[circ] {} |- (DMEM-WD);
 
 % Extend ->[ImmExt] ADDPCTarget.in2
-\draw[line data] (IMMExtend.east) node[above right,signal] {ImmExt} -- (xMUXSrcBin2|-IMMExtend.east);
+\draw[emph data no arrow] (IMMExtend.east) node[above right,signal] {ImmExt} node[below right,value] {imm} -- (xMUXSrcBin2|-IMMExtend.east);
 \draw[line data] (xMUXSrcBin2|-IMMExtend.east) -- (ADDPCTarget.blpin 2);
 
 % Extend -> MUXSrcB.in2
-\draw[line data] (xMUXSrcBin2|-IMMExtend.east) node[circ] {} |- (MUXSrcB.blpin 2);
+\draw[emph data] (xMUXSrcBin2|-IMMExtend.east) node[circ] {} |- (MUXSrcB.blpin 2);
 
 % PC -> ADDPCPlus4.in1
 \draw[emph data] (xPC|-IMEM-A) node[circ] {} |- (ADDPCPlus4.blpin 1) node[below left,value] {pc\vphantom{4}};
@@ -239,17 +239,17 @@
 \draw[emph data] (xPCPlus4|-ADDPCPlus4.brpin 2) node[circ] {} |- (xMUXPCNextin1|-yPCPlus4) |- (MUXPCNext.blpin 1);
 
 % ALU.out ->[ALUResult] DMEM.A
-\draw[emph data no arrow] (ALU.brpin 2) node[below right,value] {rs1+rs2} node[above right,signal] {ALUResult} -- (xALUResult|-DMEM-A); 
+\draw[emph data no arrow] (ALU.brpin 2) node[below right,value] {rs1+imm} node[above right,signal] {ALUResult} -- (xALUResult|-DMEM-A); 
 \draw[line data] (xALUResult|-DMEM-A) -- (DMEM-A);
 
 % ALU.out -> MUXResult.in1
-\draw[emph data] (xALUResult|-DMEM-A) node[circ] {} |- (xMUXResultin|-yALUResult) node[below left,value] {rs1+rs2}  |- (MUXResult.blpin 1);
+\draw[emph data] (xALUResult|-DMEM-A) node[circ] {} |- (xMUXResultin|-yALUResult) node[below left,value] {rs1+imm}  |- (MUXResult.blpin 1);
 
 % DMEM.RD ->[ReadData] MUXResult.in2
 \draw[line data] (DMEM-RD) node[above right,signal] {ReadData} --  (MUXResult.blpin 2);
 
 % MUXRestult.out -> REGFILE.WD3
-\draw[emph data] (MUXResult.brpin 1) -| (xResult|-yResultWB) node[above left,signal] {Result} -| (xResultWB|-REGFILE-WD3) node[left,value,yshift=-1cm] {rs1+rs2} -- (REGFILE-WD3);
+\draw[emph data] (MUXResult.brpin 1) -| (xResult|-yResultWB) node[above left,signal] {Result} -| (xResultWB|-REGFILE-WD3) node[left,value,yshift=-1cm] {rs1+imm} -- (REGFILE-WD3);
 
 % ADDPCTarget
 \draw[line data] (ADDPCTarget.brpin 2) node[above right,signal] {PCTarget} -| (xPCTarget|-yPCTarget) -| (xMUXPCNextin2|-MUXPCNext.blpin 2) -- (MUXPCNext.blpin 2);
@@ -260,7 +260,7 @@
 \draw[emph control] (CU-RegWrite) -| (REGFILE-WE) coordinate (xV-RegWrite);
 
 % ImmSrc -> Extend
-\draw[line control] (CU-ImmSrc) -| (xImmSrc|-yImmSrc) coordinate (xV-ImmSrc) -| (IMMExtend.north);
+\draw[emph control] (CU-ImmSrc) -| (xImmSrc|-yImmSrc) coordinate (xV-ImmSrc) -| (IMMExtend.north);
 
 % ALUSrcB -> MUXSrcB
 \draw[emph control] (CU-ALUSrcB) -| (MUXSrcB.btpin 1) coordinate (xV-ALUSrcB);
@@ -285,7 +285,7 @@
 {%
     PCSrc/0/right/line control,
     RegWrite/1/right/emph control,
-    ImmSrc/xx/right/line control,
+    ImmSrc/00/right/line control,
     ALUSrcB/1/right/emph control,
     ALUControl/000(alutype)/right/emph control,
     MemWrite/0/right/line control,
@@ -300,7 +300,7 @@
 
 \path (LogoCenter) ++(0.5,-0.3) node[minimum width=5cm,minimum height=2cm,fill=black!20!white] {};
 
-\path (LogoCenter) node[draw,minimum width=5cm,minimum height=2cm,ultra thick,black,fill=black!50!white,align=center] {\LARGE\bfseries\rmfamily\textcolor{white}{R/OP}\\ \large\textcolor{white}{add rd,rs1,rs2}};
+\path (LogoCenter) node[draw,minimum width=5cm,minimum height=2cm,ultra thick,black,fill=black!50!white,align=center] {\LARGE\bfseries\rmfamily\textcolor{white}{I/OP-IMM}\\ \large\textcolor{white}{addi rd,rs1,imm}};
 
 
 \end{tikzpicture}
