@@ -295,6 +295,9 @@
     \path[\type] (xV-\x |-CU-funct7) node[\direc,value] {\val};
 }
 
+% ---- Register Content ---- %
+\path (REGPC) node[value,draw,fill=white] {\rotatebox{90}{pc\vphantom{hp}}};
+
 % ---- Logo ---- %
 \path (IMEM-A|-CU-ImmSrc) ++ (0,0) coordinate (LogoCenter);
 
