@@ -97,8 +97,8 @@
 %设定标题编号至subparagraph
 \setcounter{secnumdepth}{5}
 
-%设定目录读取至subsubsection
-\setcounter{tocdepth}{3}
+%设定目录读取至subsection
+\setcounter{tocdepth}{2}
 
 %设定part格式
 \titleformat{\part}[display]
