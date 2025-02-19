@@ -67,6 +67,8 @@
 \draw[line control] (xOP|-MD-op) node[below right,yshift=-0.2cm,signal] {\scalebox{0.5}{[5]}} node[circ] {} -- (xOP|-AD-op) node[left,signal] {op[5]} -- (AD-op);
 \draw[line control] (OR.out) -- (xPCSrc|-OR.out) node[right,signal] {PCSrc};
 
+\draw[line control,-latex] (MD.south) -- node[right,signal] {ALUOp[1:0]} (AD.north);
+
 \draw[ultra thin] ($(xL|-AD.south)+(-2.5,-0.3)$) rectangle ($(xPCSrc|-AND.north)+(1.3,0.3)$); 
 
 \end{tikzpicture}

@@ -31,13 +31,13 @@
 \begin{BoxFormula}[执行时间]
     程序的执行时间$t$可以表示为
     \begin{Equation}
-        t=n\cdot\te{CPI}\cdot T_c
+        T=n\cdot\te{CPI}\cdot T_c
     \end{Equation}
 \end{BoxFormula}
 
 其中，$n$是指令数量，$T_c$是时钟周期，$\te{CPI}$（Cycles Per Instruction）是平均一条指令所需的周期数。需要指出的是，$\te{CPI}$是一个与具体程序有关的指标。对于单周期处理器，所有指令都是在一个周期中完成，故恒定有$\te{CPI}=1$。对于多周期处理器，由于指令所需的周期数取决于指令的类型，故$\te{CPI}$会取决于程序中各类型的指令数量。对于流水线处理器，由于某些指令执行顺序下会触发流水线停滞和流水线冲刷，故$\te{CPI}$还会取决于程序中指令的顺序关系。
 
-\xref{tab:参考指令类型比例}给出了SPECint2000各指令类型的比例，并假设了LOAD和BRANCH中触发流水线停滞和流水线冲刷的比例。本章计算处理器性能时均参照此数据（指令数量取$n=\SI{1e9}{}$）。
+\xref{tab:参考指令类型比例}给出了SPECint2000各指令类型的比例，并假设了LOAD和BRANCH中触发流水线停滞和流水线冲刷的比例。本章计算处理器性能时均参照此数据（指令数量取$n=\SI{1e11}{}$）。
 
 \begin{Tablex}[参考指令类型比例（SPECint2000）;参考指令类型比例]{lYr}
     <类型&备注&比例\\>
@@ -61,5 +61,5 @@
     控制单元（Control Unit）&$t_{dec}$&$\SI{25}{ps}$\\
     存储器读取（Memory Read）&$t_{mem}$&$\SI{200}{ps}$\\
     寄存器堆读取（Register File Read）&$t_{rf}$&$\SI{100}{ps}$\\
-    寄存器堆建立时间（Register File Setup）&$t_{rfsetup}$&$\SI{60}{ps}$\\
+    寄存器堆建立时间（Register File Setup）&$t_{rf,setup}$&$\SI{60}{ps}$\\
 \end{Tablex}

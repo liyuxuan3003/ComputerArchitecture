@@ -183,7 +183,7 @@
 % ---- Line Data ---- %
 
 % MUXPCNext ->[PCNext] REGPC
-\draw[emph data] (MUXPCNext.brpin 1) node[below right,value,align=left] {imm(pc)} -- node[above,signal] {PCNext} (REGPC.west);
+\draw[emph data] (MUXPCNext.brpin 1) node[below right,value,align=left] {pc+imm} -- node[above,signal] {PCNext} (REGPC.west);
 
 % REGPC ->[PC] IMEM.A
 \draw[emph data] (REGPC.east) -- node[above,signal] {PC} (IMEM-A) node[below left,value] {pc\vphantom{4}};
@@ -252,7 +252,7 @@
 \draw[emph data] (MUXResult.brpin 1) -| (xResult|-yResultWB) node[above left,signal] {Result} -| (xResultWB|-REGFILE-WD3) node[left,yshift=-0.5cm,value] {pc+4}  -- (REGFILE-WD3);
 
 % ADDPCTarget
-\draw[emph data] (ADDPCTarget.brpin 2) node[above right,signal] {PCTarget} -- (xPCTarget|-ADDPCTarget.brpin 2) node[below right,value] {imm(pc)} -- (xPCTarget|-yPCTarget) -| (xMUXPCNextin2|-MUXPCNext.blpin 2) -- (MUXPCNext.blpin 2);
+\draw[emph data] (ADDPCTarget.brpin 2) node[above right,signal] {PCTarget} -- (xPCTarget|-ADDPCTarget.brpin 2) node[below right,value] {pc+imm} -- (xPCTarget|-yPCTarget) -| (xMUXPCNextin2|-MUXPCNext.blpin 2) -- (MUXPCNext.blpin 2);
 
 % ---- Line Control ---- %
 

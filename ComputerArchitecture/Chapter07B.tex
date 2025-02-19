@@ -33,6 +33,7 @@
     \includegraphics[scale=0.8]{build/Chapter07B_08.fig.pdf}
 \end{Figure}
 
+\xref{tab:Main Decoder真值表}展示了Main Decoder的真值表，它以表征指令类型的\codex{op[6:0]} 为输入，产生了控制单元对外的大部分控制信号。不过，\code{ALUOp} 会传递给ALUDecoder结合\codex{funct3,funct7} 进一步译码，产生最终输出的\codex{ALUControl} 信号。这是因为，ALU的工作模式不仅仅取决于指令类型\codex{op[6:0]}，对于R/OP和I/OP-IMM类型，进行的计算和具体指令有关。\codex{Branch,Jump}这两个信号在遇到B/BRANCH和J/JUMP类型时为高，它们共同产生了\codex{PCSrc} 信号。逻辑是，若\codex{Jump} 为高（无条件跳转），或\codex{Branch} 和\codex{Zero} 同时高（有条件跳转），\codex{PCSrc} 为高。
 \begin{Tablex}[Main Decoder真值表]{l>{\ttfamily}X*{8}{@{\hspace{6.5pt}}>{\ttfamily}c}}
     <类型&op&RegWrite&ImmSrc&ALUSrcB&MemWrite&ResultSrc&Branch&Jump&ALUOp\\>
     I/LOAD & 0000011 & 1 & 00 & 1 & 0 & 1 & 0 & 0 & 00\\
@@ -43,6 +44,8 @@
     J/JAL & 1101111 & 1 & 11 & x & 0 & 10 & 0 & 1 & xx\\
 \end{Tablex}
 
+\xref{tab:ImmSrc的控制编码}展示了Extend是如何在Main Decoder产生的\codex{ImmSrc} 下工作的。\codex{ImmSrc} 用两位编码了需要立即数的四种指令类型：I、S、B、J。Extend单元要做的就是根据\xref{fig:RISC-V指令类型}的各类型的立即数编码方式（编码已尽量保证较多的位数重合），正确的扩展出一个$\SI{32}{bit}$的立即数。
+
 \begin{Tablex}[ImmSrc的控制编码]{l>{\ttfamily}c>{\ttfamily}Xr}
     <类型&ImmSrc&ImmExt&说明\\>
     I&00&\{20\{Instr[31]\},Instr[31:20]\}&\SI{12}{bit}有符号\\
@@ -51,22 +54,36 @@
     J&11&\{12\{Instr[31]\},Instr[19:12],Instr[20],Instr[30:21],1'b0\}&\SI{21}{bit}有符号\\
 \end{Tablex}
 
+\xref{tab:ALU Decoder真值表}展示了ALU Decoder的真值表。注意到\codex{ALUOp} 信号的工作方式
+\begin{itemize}
+    \item 对于I/LOAD和S/STORE，\codex{ALUOp=00}，此时\codex{ALUControl=000} 做加法（地址偏移）。
+    \item 对于B/BRANCH，\codex{ALUOp=01}，此时\codex{ALUControl=001} 做减法（比较）。
+    \item 对于R/OP和I/OP-IMM，\codex{ALUOp=10}，此时\codex{ALUControl} 取决于具体指令的指定计算。
+\end{itemize}
+
+这里有一个较复杂的细节是，大部分R/OP和I/OP-IMM的指令之间都是通过\codex{funct3} 就能区分，然而\codex{add,sub} 的\codex{funct3} 是相同的，需要借助\codex{funct7[5]=0,1} 来区分，但更麻烦的事情在于，首先不存在\codex{subi}，其次\codex{addi} 没有\codex{funct7} 的字段，这一部分被其立即数编码占用了。注意到R/OP和I/OP-IMM的\codex{op} 分别为\codex{0110011} 和\codex{0010011}，可以通过\codex{op[5]=0,1} 区分，因此，当\codex{op[5]=0} 时，无论\codex{funct7[5]} 是什么（是立即数的某一位），都代表加法。
+
 \begin{Tablex}[ALU Decoder真值表]{>{\ttfamily}X*{4}{@{\hspace{30pt}}>{\ttfamily}c}r}
-    <\rmfamily 指令&ALUOp&funct3&\{op,funct7[5]\}&ALUControl&说明\\>
+    <\rmfamily 指令&ALUOp&funct3&\{op[5],funct7[5]\}&ALUControl&说明\\>
     lw,sw & 00 & xxx & xx & 000 & 加法\\
     beq & 01 & xxx & xx & 001 & 减法\\
     add,addi & 10 & 000 & 00|01|10 & 000 & 加法\\
     sub & 10 & 000 & 11 & 001 & 减法\\
-    slt,slti & 10 & 010 & xxx & 101 & 当小于时赋值\\
+    slt,slti & 10 & 010 & xx & 101 & 当小于时赋值\\
     or,ori & 10 & 110 & xx & 011 & 按位或\\
     and,andi & 10 & 111 & xx & 010 & 按位与\\
 \end{Tablex}
 
-\newpage
-
 \subsection{单周期处理器的数据通路}
+首先，所有类型的指令共用的数据通路是：当前周期指令的地址\codex{pc} 从PC寄存器中取出，经过\codex{PCPlus4} 加法器计算顺序执行的下一条指令地址\codex{pc+4}。同时，指令地址\codex{pc} 经过IMEM读出当前指令内容\codex{instr}，描述指令类型的\codex{op,funct3,funct7} 字段被送至控制单元译码，描述寄存器地址的\codex{xrs1,xrs2,xrd} 字段被送至寄存器堆的地址端，描述立即数的\codex{ximm} 字段被送至立即数扩展单元（这里前缀\codex{x} 用于区分寄存器地址和寄存器值/立即数字段和立即数）。
 
-\begin{TableLong}[单周期RISC-V处理器的原理分析]{|c|c|}*
+在LOAD和STORE指令类型中，ALU计算\codex{rs1,imm} 的加法，该计算结果的意义是DMEM地址\codex{imm(rs1)}，送至DMEM的\codex{A} 端。对于LOAD指令\codex{MemWrite=0}，DMEM从\codex{RD} 端读出数据\codex{[imm(rs1)]} 并经过MUX传递至REGFILE的\codex{WD3} 端处，从而将该数据写回至寄存器\codex{rd}。对于STORE指令\codex{MemWrite=1}，DMEM自\codex{WD} 端接受写入\codex{imm(rs1)} 的数据\codex{rs2}。
+
+在OP和OP-IMM指令类型中，ALU对\codex{rs1,rs2} 和\codex{rs1,imm} 进行指令指定的计算，计算结果在“跳过DMEM”后直接通过MUX写回至\codex{rd}。由此可见ALU输出的多重功能，对于写回值，既可能直接来自ALU的计算结果，也可能来自ALU的计算结果代表的地址处的数据。
+
+在BRANCH和JAL指令类型中，\codex{PCTarget} 加法器计算跳转指令地址\codex{pc+imm}，\codex{PCPlus4}加法器计算顺序指令地址\codex{pc+4}，两者都被送至产生的\codex{PCNext} 的MUX处，对于BRANCH指令，ALU会计算\codex{rs1,rs2} 的减法，ALU在正常输出外还会产生一个指示计算结果是否为零的的控制信号\codex{Zero}，其被接至Control Unit从而产生选择下一指令地址的\codex{PCSrc}。而有所不同的是，对于JAL指令，其总是选择跳转地址，但\codex{pc+4} 同样不会浪费，其需要写回至\codex{rd}。
+
+\begin{TableLong}[单周期RISC-V处理器的数据通路]{|c|c|}*
     <\hlinemid>()
     \xcell<c>[1.5ex][0.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07B_02.fig.pdf}}&
     \xcell<c>[1.5ex][0.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07B_03.fig.pdf}}\\*
@@ -80,3 +97,38 @@
 \end{TableLong}
 
 \subsection{单周期处理器的性能分析}
+\xref{tab:参考电路延时}指出，在处理器中，存储器读取（$t_{mem}=\SI{200}{ps}$）和算数逻辑单元（$t_{alu}=\SI{120}{ps}$）是最为耗时的步骤，而LOAD类型的\codex{lw} 指令会同时涉及这两个操作（ALU计算地址，DMEM读取数据），作为最慢的指令，它会限制单周期处理器的最小周期。根据\xref{tab:单周期RISC-V处理器的数据通路}可知
+\begin{Equation}
+    \qquad
+    T_{c,single}=t_{pc,pcq}+t_{mem}+\max(t_{rf},t_{dec}+t_{ext}+t_{mux})+t_{alu}+t_{mem}+t_{mux}+t_{rf,setup}
+    \qquad
+\end{Equation}
+传播时间$t_{pcq}$是上升沿到来之后多久信号能到达寄存器输出端。建立时间$t_{setup}$是上升沿到来前多久信号就要抵达寄存器输入端。因此，周期的计算，总是以某个寄存器的$t_{pcq}$起始，并且以某个寄存器的$t_{setup}$结束。其中，$t_{pc,pcq}$是新地址\codex{pc} 在上升沿后到达PC寄存器输出端的时间，$t_{mem}$ 是地址\codex{pc} 从IMEM中读取指令\codex{instr} 的时间。接下来有两条可能的关键路径：第一条$t_{rf}$是REGFILE中\codex{rs1} 读取，其连接到\codex{SrcA}。第二条$t_{dec}+t_{ext}+t_{mux}$是\codex{imm} 的产生和传递，首先Control Unit解码出\codex{ImmSrc}，随后Extend在其控制下扩展出立即数\codex{ImmExt}，最后还需要经过MUX到达\codex{SrcB}。随后，$t_{alu}$ 完成计算产生地址偏移\codex{imm(rs1)} 的时间，$t_{mem}$ 是DMEM读取出数据\codex{[imm(rs1)]} 的时间，$t_{mux}$ 是该数据通过MUX到达\codex{Result} 的时间，最后，$t_{rf,setup}$ 是REGFILE写回\codex{rd} 在下一周期上升沿到来前的建立时间。
+
+经过化简，并根据\xref{tab:参考电路延时}注意到$t_{rf}=\SI{100}{ps}$和$t_{dec}+t_{ext}+t_{mux}=\SI{90}{ps}$
+\begin{Equation}
+    T_{c,single}=t_{pc,pcq}+2t_{mem}+t_{rf}+t_{alu}+t_{mux}+t_{rf,setup}
+\end{Equation}
+将结果整理如下，并求出数值
+\begin{BoxFormula}[单周期处理器的最小周期]
+    单周期处理器的最小周期是
+    \begin{Equation}
+        \qquad\qquad\qquad
+        T_{c,single}=t_{pc,pcq}+2t_{mem}+t_{rf}+t_{alu}+t_{mux}+t_{rf,setup}=\SI{750}{ps}
+        \qquad\qquad\qquad
+    \end{Equation}
+\end{BoxFormula}
+单周期处理器的$\te{CPI}$恒定为$1$，因为其任何指令都在一个周期内执行完成
+\begin{BoxFormula}[单周期处理器的指令平均周期数]
+    单周期处理器的CPI是
+    \begin{Equation}
+        \te{CPI}_{single}=1.0
+    \end{Equation}
+\end{BoxFormula}
+单周期处理器在指令数$n=\SI{1e11}{}$下的程序执行时间$T=n\cdot\te{CPI}\cdot T_{c}$因而为
+\begin{BoxFormula}[单周期处理器的程序执行时间]
+    单周期处理器的程序执行时间是
+    \begin{Equation}
+        T_{single}=\SI{75}{s}
+    \end{Equation}
+\end{BoxFormula}
