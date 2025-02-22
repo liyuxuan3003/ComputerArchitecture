@@ -216,7 +216,7 @@
 \draw[line data] (REGPC.east) -- node[above,pos=0.3,signal] {PC} (MUXAdr.blpin 1);
 
 % MUXAdr ->[Adr] MEM.A
-\draw[emph data] (MUXAdr.brpin 1) -- node[above,signal] {Adr} (MEM-A); 
+\draw[line data] (MUXAdr.brpin 1) -- node[above,signal] {Adr} (MEM-A); 
 
 % PC -> REGInstr
 \draw[line data] (xPC|-REGPC.east) node[circ] {} |- (REGInstr.west|-yREGInstr1);
@@ -346,7 +346,7 @@
     MemWrite/0/right/line control,
     IRWrite/0/right/line control,
     RegWrite/1/right/emph control,
-    ImmSrc/xxx/right/line control,
+    ImmSrc/immsrc/right/line control,
     ALUSrcA/xx/left/line control,
     ALUSrcB/xx/left/line control,
     ALUControl/xxx/left/line control,
@@ -367,7 +367,7 @@
 
 \path (REGInstr.north) node[above right] {*};
 
-\path (REGALUOut) node[value,draw,fill=white,yshift=-0.12cm] {\rotatebox{90}{rd\vphantom{hp}}};
+\path (REGALUOut) node[value,draw,fill=white,yshift=0cm] {\rotatebox{90}{rd\vphantom{hp}}};
 
 % ---- Logo ---- %
 \path (ALU|-yImmSrc) ++ (-0.2,-0.2) coordinate (LogoCenter);

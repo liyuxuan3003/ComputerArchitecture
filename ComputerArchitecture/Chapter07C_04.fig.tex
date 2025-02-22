@@ -337,7 +337,7 @@
 \foreach \x/\val/\direc/\type in%
 {%
     PCWrite/0/right/line control,
-    AdrSrc/0/right/line control,
+    AdrSrc/x/right/line control,
     MemWrite/0/right/line control,
     IRWrite/0/right/line control,
     RegWrite/0/right/line control,
@@ -345,7 +345,7 @@
     ALUSrcA/10/left/emph control,
     ALUSrcB/01/left/emph control,
     ALUControl/000/left/emph control,
-    ResultSrc/10/left/line control%
+    ResultSrc/xx/left/line control%
 }
 {
     \path[\type] (xV-\x |-CU-funct7) node[\direc,value] {\val};
