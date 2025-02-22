@@ -213,46 +213,46 @@
 % ---- Line Data ---- %
 
 % REG ->[PC] MUXAdr
-\draw[emph data] (REGPC.east) -- node[above,pos=0.3,signal] {PC} node[below,value] {pc} (MUXAdr.blpin 1);
+\draw[line data] (REGPC.east) -- node[above,pos=0.3,signal] {PC} (MUXAdr.blpin 1);
 
 % MUXAdr ->[Adr] MEM.A
-\draw[emph data] (MUXAdr.brpin 1) -- node[above,signal] {Adr} node[below,value] {pc} (MEM-A); 
+\draw[line data] (MUXAdr.brpin 1) -- node[above,signal] {Adr} (MEM-A); 
 
 % PC -> REGInstr
-\draw[emph data] (xPC|-REGPC.east) node[circ] {} |- (REGInstr.west|-yREGInstr1) node[above left,xshift=-0.5cm,value] {pc};
+\draw[line data] (xPC|-REGPC.east) node[circ] {} |- (REGInstr.west|-yREGInstr1);
 
 % PC -> MUXSrcA.in1
-\draw[emph data] (xPC|-yREGInstr1) node[circ] {} |- (xMUXSrcAin1|-yPC) node[below left,value] {pc} |- (MUXSrcA.blpin 1);
+\draw[line data] (xPC|-yREGInstr1) node[circ] {} |- (xMUXSrcAin1|-yPC) |- (MUXSrcA.blpin 1);
 
 % MEM.RD -> REGInstr
-\draw[emph data] (MEM-RD) -- node[above,value,pos=0.4] {instr} (REGInstr.west|-MEM-RD);
+\draw[line data] (MEM-RD) -- (REGInstr.west|-MEM-RD);
 
 % MEM.RD ->[ReadData] REGData
 \draw[line data] (xReadData|-MEM-RD) node[circ] {} -- node[right,pos=0.4,signal] {\rotatebox{-90}{ReadData}} (xReadData|-REGData.west) -- (REGData.west);
 
 % REGInstr2-[Instr] |
-\draw[line data] (REGInstr.east|-yREGInstr2) node[above right,signal] {Instr} --  (xInstr|-yREGInstr2);
-\draw[line data] (xInstr|-CU-op) -- (xInstr|-IMMExtend.west);
+\draw[emph data no arrow] (REGInstr.east|-yREGInstr2) node[above right,signal] {Instr} -- node[below,value] {instr} (xInstr|-yREGInstr2);
+\draw[emph data no arrow] (xInstr|-CU-op) -- (xInstr|-IMMExtend.west);
 
 % Instr Split
-\foreach \y/\bmax/\bmin in {CU-op/06/00,CU-funct3/14/12,CU-funct7/31/25,REGFILE-A1/19/15,REGFILE-A2/24/20,REGFILE-A3/11/07,IMMExtend.west/31/07}
+\foreach \y/\bmax/\bmin/\type/\val in {CU-op/06/00/emph data/,CU-funct3/14/12/emph data/,CU-funct7/31/25/emph data/,REGFILE-A1/19/15/line data/,REGFILE-A2/24/20/emph data/xrs2,REGFILE-A3/11/07/line data/,IMMExtend.west/31/07/emph data/ximm}
 {
-    \draw[line data] (xInstr|-\y) node[above right,signal] {\scalebox{0.5}{[\bmax :\bmin]}} -- (\y);
+    \draw[\type] (xInstr|-\y) node[above right,signal] {\scalebox{0.5}{[\bmax :\bmin]}} node[below right,value] {\val} -- (\y);
 }
 
-\foreach \y in {CU-funct3,CU-funct7,REGFILE-A1,REGFILE-A2,REGFILE-A3}
+\foreach \y/\type in {CU-funct3/emph data,CU-funct7/emph data,REGFILE-A1/line data,REGFILE-A2/emph data,REGFILE-A3/line data}
 {
-    \path (xInstr|-\y) node[circ] {};
+    \path (xInstr|-\y) node[circ,\type] {};
 }
 
 % REGFILE.RD1 -> REGRD.in1
 \draw[line data] (REGFILE-RD1) -- (REGRD.west|-yREGRD1);
 
 % REGFILE.RD2 -> REGRD.in2
-\draw[line data] (REGFILE-RD2) -- (REGRD.west|-yREGRD2);
+\draw[emph data] (REGFILE-RD2) -- node[below,value,pos=0.6] {rs2} (REGRD.west|-yREGRD2);
 
 % REGRD.out1 -> MUXSrcA.in3
-\draw[line data] (REGRD.east|-yREGRD1) node[above right,signal] {A} -- (MUXSrcA.blpin 3);
+\draw[emph data] (REGRD.east|-yREGRD1) node[above right,signal] {A} -- node[below,value] {rs1} (MUXSrcA.blpin 3);
 
 % REGRD.out2 -> MUXSrcB.in3
 \draw[line data] (REGRD.east|-yREGRD2)  node[above right,signal] {B} -- (MUXSrcB.blpin 1);
@@ -261,35 +261,35 @@
 \draw[line data] (xWriteData|-yREGRD2) node[circ] {} -- node[left,pos=0.6,signal] {\rotatebox{-90}{WriteData}} (xWriteData|-yWriteDataWB) -- (xWriteDataWB|-yWriteDataWB) |- (MEM-WD);
 
 % Extend ->[ImmExt] MUXSrcB.in2
-\draw[line data] (IMMExtend.east) node[above right,signal] {ImmExt} -- (xIMMExt|-IMMExtend.east) |- (MUXSrcB.blpin 2);
+\draw[emph data] (IMMExtend.east) node[above right,signal] {ImmExt} -- node[below,value] {imm} (xIMMExt|-IMMExtend.east) |- (MUXSrcB.blpin 2);
 
 % 4 -> MUXSrcB.in3
-\draw[emph data] (xMUXSrcBin3|-MUXSrcB.blpin 3) node[left,line data] {4} node[ocirc,line data] {} -- node[below,pos=0.4,value] {4} (MUXSrcB.blpin 3);
+\draw[line data] (xMUXSrcBin3|-MUXSrcB.blpin 3) node[left,line data] {4} node[ocirc,line data] {} -- (MUXSrcB.blpin 3);
 
 % REGInstr.out2 -> MUXSrcA.in2
 \draw[line data] (REGInstr.east|-yREGInstr1) node[above right,signal] {PCCurr} -- (xMUXSrcAin2|-yREGInstr1) |- (MUXSrcA.blpin 2);
 
 % MUXSrcA ->[SrcA] ALU.in1
-\draw[emph data] (MUXSrcA.brpin 1) -- node[below,value] {pc} (ALU.blpin 1) node[above left,signal] {SrcA}; 
+\draw[emph data] (MUXSrcA.brpin 1) -- node[below,value] {rs1} (ALU.blpin 1) node[above left,signal] {SrcA}; 
 
 % MUXSrcB ->[SrcB] ALU.in2
-\draw[emph data] (MUXSrcB.brpin 1) -| (xSrc|-ALU.blpin 2) -- node[below,value] {4} (ALU.blpin 2) node[above left,signal] {SrcB};
+\draw[emph data] (MUXSrcB.brpin 1) -| (xSrc|-ALU.blpin 2) -- node[below,value] {imm} (ALU.blpin 2) node[above left,signal] {SrcB};
 
 % ALU.out -> REGALUOut
-\draw[emph data no arrow] (ALU.brpin 2) node[above right,signal] {ALUResult} -- node[below,value] {pc+4} (xALUResult|-ALU.brpin 2); 
-\draw[line data] (xALUResult|-ALU.brpin 2) -- (REGALUOut.west);
+\draw[emph data no arrow] (ALU.brpin 2) node[above right,signal] {ALUResult} -- node[below,value] {imm(rs1)} (xALUResult|-ALU.brpin 2); 
+\draw[emph data] (xALUResult|-ALU.brpin 2) -- (REGALUOut.west);
 
 % REGALUout -> MUXResult.in1
 \draw[line data] (REGALUOut.east) node[above right,signal] {ALUOut} -- (MUXResult.blpin 1);
 
 % ALUResult -> MUXResult.in3
-\draw[emph data] (xALUResult|-ALU.brpin 2) node[circ] {} -- (xALUResult|-MUXResult.blpin 3) -- node[below,value,pos=0.4] {pc+4} (MUXResult.blpin 3);
+\draw[line data] (xALUResult|-ALU.brpin 2) node[circ] {} -- (xALUResult|-MUXResult.blpin 3) -- (MUXResult.blpin 3);
 
 % REGData ->[Data] MUXResult.in2
 \draw[line data] (REGData.east) node[above right,signal] {Data} -| (xData|-MUXResult.blpin 2) -- (MUXResult.blpin 2);
 
 % MUXResult.out -> REGPC
-\draw[emph data] (MUXResult.brpin 1) -| (xResult|-yResultWB) node[above left,signal] {Result} node[above left,yshift=2cm,value] {pc+4} -- (xREGPCin|-yResultWB) -- (xREGPCin|-yResultWB) -- node[right,signal] {\rotatebox{90}{PCNext}} (xREGPCin|-REGPC.west) node[above,value] {pc+4} -- (REGPC.west);
+\draw[line data] (MUXResult.brpin 1) -| (xResult|-yResultWB) node[above left,signal] {Result} -- (xREGPCin|-yResultWB) -- (xREGPCin|-yResultWB) -- node[right,signal] {\rotatebox{90}{PCNext}} (xREGPCin|-REGPC.west) -- (REGPC.west);
 
 % Result -> MUXAdr.in2
 \draw[line data] (xResultAdr|-yResultWB) node[circ] {} |- (MUXAdr.blpin 2);
@@ -304,7 +304,7 @@
 \draw[line control] (CU-RegWrite) -| (REGFILE-WE) coordinate (xV-RegWrite);
 
 % ImmSrc -> Extend
-\draw[line control] (CU-ImmSrc) -| (xImmSrc|-yImmSrc) coordinate (xV-ImmSrc) -| (IMMExtend.north);
+\draw[emph control] (CU-ImmSrc) -| (xImmSrc|-yImmSrc) coordinate (xV-ImmSrc) -| (IMMExtend.north);
 
 % ALUSrcB -> MUXSrcB
 \draw[emph control] (CU-ALUSrcB) -| (MUXSrcB.btpin 1) coordinate (xV-ALUSrcB);
@@ -316,19 +316,19 @@
 \draw[emph control] (CU-ALUControl) -| (ALU.btpin 1) coordinate (xV-ALUControl);
 
 % ResultSrc -> MUXResult
-\draw[emph control] (CU-ResultSrc) -| (MUXResult.btpin 1) coordinate (xV-ResultSrc);
+\draw[line control] (CU-ResultSrc) -| (MUXResult.btpin 1) coordinate (xV-ResultSrc);
 
 % PCWrite -> REGPC.EN
-\draw[emph control] (CU-PCWrite) -| (xREGPCEN|-yREGPCEN) coordinate (xV-PCWrite) -| (REGPC.south);
+\draw[line control] (CU-PCWrite) -| (xREGPCEN|-yREGPCEN) coordinate (xV-PCWrite) -| (REGPC.south);
 
 % AdrSrc -> MUXAdr
-\draw[emph control] (CU-AdrSrc) -| (MUXAdr.btpin 1) coordinate (xV-AdrSrc);
+\draw[line control] (CU-AdrSrc) -| (MUXAdr.btpin 1) coordinate (xV-AdrSrc);
 
 % MemWrite -> MEM.WE
 \draw[line control] (CU-MemWrite) -| (MEM-WE) coordinate (xV-MemWrite);
 
 % IRWrite -> REGInstr.EN
-\draw[emph control] (CU-IRWrite) -| (xREGInstrEN|-yREGInstrEN) coordinate (xV-IRWrite) -| (REGInstr.south);
+\draw[line control] (CU-IRWrite) -| (xREGInstrEN|-yREGInstrEN) coordinate (xV-IRWrite) -| (REGInstr.south);
 
 % ALU.Zero -> ControlUnit.Zero
 \draw[line control] (ALU.brpin 1) node[above right,signal] {Zero} -| (xZero|-yZeroCU) -| (xZeroCU|-CU-Zero) -- (CU-Zero);
@@ -336,38 +336,54 @@
 % ---- Control Signal ---- %
 \foreach \x/\val/\direc/\type in%
 {%
-    PCWrite/1/right/emph control,
-    AdrSrc/0/right/emph control,
+    PCWrite/0/right/line control,
+    AdrSrc/0/right/line control,
     MemWrite/0/right/line control,
-    IRWrite/1/right/emph control,
+    IRWrite/0/right/line control,
     RegWrite/0/right/line control,
-    ImmSrc/xx/right/line control,
-    ALUSrcA/00/left/emph control,
-    ALUSrcB/10/left/emph control,
+    ImmSrc/immsrc/right/emph control,
+    ALUSrcA/10/left/emph control,
+    ALUSrcB/01/left/emph control,
     ALUControl/000/left/emph control,
-    ResultSrc/10/left/emph control%
+    ResultSrc/10/left/line control%
 }
 {
     \path[\type] (xV-\x |-CU-funct7) node[\direc,value] {\val};
 }
 
 % ---- Register Content ---- %
-\path (REGPC) node[value,draw,fill=white] {\rotatebox{90}{pc\vphantom{hp}}};
+\path (REGPC) node[value,draw,fill=white,yshift=0.05cm] {\rotatebox{90}{pc+4\vphantom{hp}}};
+
+\path (REGPC.north) node[above right] {*};
+
+\path (REGInstr|-yREGInstr2) node[value,draw,fill=white,yshift=0.25cm] {\rotatebox{90}{instr\vphantom{hp}}};
+
+\path (REGInstr|-yREGInstr1) node[value,draw,fill=white,yshift=0cm] {\rotatebox{90}{pc\vphantom{hp}}};
+
+\path (REGInstr.north) node[above right] {*};
+
+\path (REGRD|-yREGRD1) node[value,draw,fill=white,yshift=0.02cm] {\rotatebox{90}{rs1\vphantom{hp}}};
+
+\path (REGRD|-yREGRD2) node[value,draw,fill=white,yshift=-0.02cm] {\rotatebox{90}{rs2\vphantom{hp}}};
+
+\path (REGALUOut) node[value,draw,fill=white,yshift=-0.1cm] {\rotatebox{90}{pc+imm\vphantom{hp}}};
 
 % ---- Logo ---- %
 \path (ALU|-yImmSrc) ++ (-0.2,-0.2) coordinate (LogoCenter);
 
 \path (LogoCenter) ++(0.5,-0.3) node[minimum width=6.0cm,minimum height=2.2cm,fill=black!20!white] {};
 
-\path (LogoCenter) node[draw,minimum width=6cm,minimum height=2.2cm,ultra thick,black,fill=black!50!white,align=center,text=white,font=\LARGE\bfseries\rmfamily] {S0\;:\;Fetch\\ {}};
+\path (LogoCenter) node[draw,minimum width=6cm,minimum height=2.2cm,ultra thick,black,fill=black!50!white,align=center,text=white,font=\LARGE\bfseries\rmfamily] (Logo) {S2\;:\;MemAdr\\ {}};
 
-\path (LogoCenter) node[align=center,yshift=-0.4cm,text=white,font=\rmfamily] {$\to$ S1}; 
+\path (LogoCenter) node[align=center,yshift=-0.4cm,text=white,font=\rmfamily\footnotesize] {I/LOAD$\to$S7\quad S/STORE$\to$S8};
+
+\path (Logo.north west) node[below right,font=\rmfamily\footnotesize,text=white] {S1$\leftarrow$};
 
 \path (REGALUOut|-CU-ImmSrc) ++ (-0.7,-0.2) coordinate (ControlInfo);
 
 \path (ControlInfo) ++(0.5,-0.3) node[minimum width=3.0cm,minimum height=5cm,fill=black!20!white] {};
 
-\path (ControlInfo) node[draw,minimum width=3.0cm,minimum height=5cm,ultra thick,black,fill=black!50!white,align=center,text=white,font=\ttfamily] {AdrSrc=0\\ IRWrite\\ ALUSrcA=00\\ ALUSrcB=10\\ ALUOp=00\\ ResultSrc=10\\ PCUpate};
+\path (ControlInfo) node[draw,minimum width=3.0cm,minimum height=5cm,ultra thick,black,fill=black!50!white,align=center,text=white,font=\ttfamily] {ALUSrcA=10\\ ALUSrcB=01\\ ALUOp=00};
 
 \end{tikzpicture}
 \end{document}

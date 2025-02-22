@@ -222,7 +222,7 @@
 \draw[line data] (xPC|-REGPC.east) node[circ] {} |- (REGInstr.west|-yREGInstr1);
 
 % PC -> MUXSrcA.in1
-\draw[line data] (xPC|-yREGInstr1) node[circ] {} |- (xMUXSrcAin1|-yPC) node[below left,value] {pc} |- (MUXSrcA.blpin 1);
+\draw[line data] (xPC|-yREGInstr1) node[circ] {} |- (xMUXSrcAin1|-yPC) |- (MUXSrcA.blpin 1);
 
 % MEM.RD -> REGInstr
 \draw[line data] (MEM-RD) -- (REGInstr.west|-MEM-RD);
@@ -340,12 +340,12 @@
     AdrSrc/0/right/line control,
     MemWrite/0/right/line control,
     IRWrite/0/right/line control,
-    RegWrite/0/left/line control,
-    ImmSrc/xx/left/line control,
+    RegWrite/0/right/line control,
+    ImmSrc/immsrc/right/emph control,
     ALUSrcA/00/left/emph control,
     ALUSrcB/10/left/emph control,
     ALUControl/000/left/emph control,
-    ResultSrc/10/left/emph control%
+    ResultSrc/10/left/line control%
 }
 {
     \path[\type] (xV-\x |-CU-funct7) node[\direc,value] {\val};
