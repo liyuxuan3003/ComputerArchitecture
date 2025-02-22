@@ -42,7 +42,7 @@
 \path (MEM-A) ++ (-0.75,0) node[mux21,anchor=east] (MUXAdr) {};
 
 % REG PC
-\path (xL|-MUXAdr.blpin 1) ++(1.5,0) node[register,anchor=west] (REGPC) {};
+\path (xL|-MUXAdr.blpin 1) ++(1.5,0) node[register,anchor=west,minimum height=1.8cm] (REGPC) {};
 
 % REG Instr
 \path (MEM.north east) ++(1.25,0.1) node[register,minimum height=3.0cm,anchor=west] (REGInstr) {};
@@ -50,7 +50,7 @@
 \path ($(yREGInstr2)!2.0!(REGInstr)$) coordinate (yREGInstr1);
 
 % REG Data
-\path (REGInstr.south|-MEM.south) ++(0,-2.0) node[register,anchor=north] (REGData) {};
+\path (REGInstr.south|-MEM.south) ++(0,-1.85) node[register,anchor=north,minimum height=1.8cm] (REGData) {};
 
 % ---- Around REGFILE ---- %
 
@@ -72,7 +72,7 @@
 \path (MUXSrcB.brpin 1|-MUXSrcA.brpin 1) ++ (1.2,0) node[add,anchor=blpin 1] (ALU) {\rotatebox{90}{ALU}};
 
 % REGALUOut
-\path (ALU.brpin 2) ++ (2.0,0) node[register,anchor=west] (REGALUOut) {};
+\path (ALU.brpin 2) ++ (2.0,0) node[register,anchor=west,minimum height=1.8cm] (REGALUOut) {};
 
 % MUX Result
 \path (xR|-REGALUOut.east) ++(-1.5,0) node[mux31,anchor=blpin 1] (MUXResult) {};
