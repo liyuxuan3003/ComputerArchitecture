@@ -177,7 +177,7 @@
 
 \path ($(MEM.east)!0.78!(REGFILE.west)$) coordinate (xInstr) ++(-0.35,0) coordinate (xResultWD3);
 
-\path (REGFILE.east) ++(0.5,0) coordinate (xImmSrc);
+\path (REGFILE.east) ++(0.25,0) coordinate (xImmSrc);
 
 \path (REGRD.east) ++(0.25,0) coordinate (xWriteData) ++(0.5,0) coordinate (xIMMExt);
 
@@ -230,11 +230,11 @@
 % MEM.RD ->[ReadData] REGData
 \draw[line data] (xReadData|-MEM-RD) node[circ] {} -- node[right,pos=0.4,signal] {\rotatebox{-90}{ReadData}} (xReadData|-REGData.west) -- (REGData.west);
 
-% MEM -[Instr] |
+% REGInstr2-[Instr] |
 \draw[line data] (REGInstr.east|-yREGInstr2) node[above right,signal] {Instr} --  (xInstr|-yREGInstr2);
 \draw[line data] (xInstr|-CU-op) -- (xInstr|-IMMExtend.west);
 
-% MEM Split
+% Instr Split
 \foreach \y/\bmax/\bmin in {CU-op/06/00,CU-funct3/14/12,CU-funct7/31/25,REGFILE-A1/19/15,REGFILE-A2/24/20,REGFILE-A3/11/07,IMMExtend.west/31/07}
 {
     \draw[line data] (xInstr|-\y) node[above right,signal] {\scalebox{0.5}{[\bmax :\bmin]}} -- (\y);
@@ -355,11 +355,19 @@
 \path (REGPC) node[value,draw,fill=white] {\rotatebox{90}{pc\vphantom{hp}}};
 
 % ---- Logo ---- %
-\path (REGALUOut|-CU-ImmSrc) ++ (-0.7,-0.2) coordinate (LogoCenter);
+\path (ALU|-yImmSrc) ++ (-0.2,-0.2) coordinate (LogoCenter);
 
-\path (LogoCenter) ++(0.5,-0.3) node[minimum width=3.8cm,minimum height=5.5cm,fill=black!20!white] {};
+\path (LogoCenter) ++(0.5,-0.3) node[minimum width=6.0cm,minimum height=2.2cm,fill=black!20!white] {};
 
-\path (LogoCenter) node[draw,minimum width=3.8cm,minimum height=5.5cm,ultra thick,black,fill=black!50!white,align=center,text=white] {{\LARGE\bfseries\rmfamily S0\;:\;Fetch}\\ AdrSrc=0\\ IRWrite\\ ALUSrcA=00\\ ALUSrcB=10\\ ALUOp=00\\ ResultSrc=10\\ PCUpate};
+\path (LogoCenter) node[draw,minimum width=6cm,minimum height=2.2cm,ultra thick,black,fill=black!50!white,align=center,text=white,font=\LARGE\bfseries\rmfamily] {S0\;:\;Fetch\\ {}};
+
+\path (LogoCenter) node[align=center,yshift=-0.4cm,text=white,font=\rmfamily] {$\to$ S1}; 
+
+\path (REGALUOut|-CU-ImmSrc) ++ (-0.7,-0.2) coordinate (ControlInfo);
+
+\path (ControlInfo) ++(0.5,-0.3) node[minimum width=3.0cm,minimum height=5cm,fill=black!20!white] {};
+
+\path (ControlInfo) node[draw,minimum width=3.0cm,minimum height=5cm,ultra thick,black,fill=black!50!white,align=center,text=white,font=\ttfamily] {AdrSrc=0\\ IRWrite\\ ALUSrcA=00\\ ALUSrcB=10\\ ALUOp=00\\ ResultSrc=10\\ PCUpate};
 
 \end{tikzpicture}
 \end{document}
