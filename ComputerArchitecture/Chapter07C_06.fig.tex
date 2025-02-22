@@ -276,7 +276,7 @@
 \draw[emph data] (MUXSrcB.brpin 1) -| (xSrc|-ALU.blpin 2) -- node[below,value] {imm} (ALU.blpin 2) node[above left,signal] {SrcB};
 
 % ALU.out -> REGALUOut
-\draw[emph data no arrow] (ALU.brpin 2) node[above right,signal] {ALUResult} -- node[below,value] {rs1+imm} (xALUResult|-ALU.brpin 2); 
+\draw[emph data no arrow] (ALU.brpin 2) node[above right,signal] {ALUResult} -- node[below,value,align=center] {rs1+imm\\ (rd)} (xALUResult|-ALU.brpin 2); 
 \draw[emph data] (xALUResult|-ALU.brpin 2) -- (REGALUOut.west);
 
 % REGALUout -> MUXResult.in1

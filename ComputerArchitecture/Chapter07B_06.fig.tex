@@ -275,7 +275,7 @@
 \draw[emph control] (CU-ResultSrc) -| (MUXResult.btpin 1) coordinate (xV-ResultSrc);
 
 % PCSrc -> MUXPCNext
-\draw[line control] (CU-PCSrc) -| (MUXPCNext.btpin 1) coordinate (xV-PCSrc);
+\draw[emph control] (CU-PCSrc) -| (MUXPCNext.btpin 1) coordinate (xV-PCSrc);
 
 % ALU.Zero -> ControlUnit.Zero
 \draw[emph control] (ALU.brpin 1) node[above right,signal] {Zero} -| (xZero|-yZeroCU) node[above,value] {rs1-rs2==0} -| (xZeroCU|-CU-Zero) -- (CU-Zero);
