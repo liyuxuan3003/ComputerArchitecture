@@ -99,30 +99,28 @@
 \subsection{单周期处理器的性能分析}
 \xref{tab:参考电路延时}指出，在处理器中，存储器读取（$t_{mem}=\SI{200}{ps}$）和算数逻辑单元（$t_{alu}=\SI{120}{ps}$）是最为耗时的步骤，而LOAD类型的\codex{lw} 指令会同时涉及这两个操作（ALU计算地址，DMEM读取数据），作为最慢的指令，它会限制单周期处理器的最小周期。根据\xref{tab:单周期RISC-V处理器的数据通路}可知
 \begin{Equation}
-    \qquad
-    T_{c,single}=t_{pc,pcq}+t_{mem}+\max(t_{rf},t_{dec}+t_{ext}+t_{mux})+t_{alu}+t_{mem}+t_{mux}+t_{rf,setup}
-    \qquad
+    \qquad\qquad
+    T_{c,single}=t_{pcq}+t_{mem}+\max(t_{rf},t_{dec}+t_{ext}+t_{mux})+t_{alu}+t_{mem}+t_{mux}+t_{rf,setup}
+    \qquad\qquad
 \end{Equation}
 传播时间$t_{pcq}$是上升沿到来之后多久信号能到达寄存器输出端。建立时间$t_{setup}$是上升沿到来前多久信号就要抵达寄存器输入端。因此，周期的计算，总是以某个寄存器的$t_{pcq}$起始，并且以某个寄存器的$t_{setup}$结束。其中，$t_{pc,pcq}$是新地址\codex{pc} 在上升沿后到达PC寄存器输出端的时间，$t_{mem}$ 是地址\codex{pc} 从IMEM中读取指令\codex{instr} 的时间。接下来有两条可能的关键路径：第一条$t_{rf}$是REGFILE中\codex{rs1} 读取，其连接到\codex{SrcA}。第二条$t_{dec}+t_{ext}+t_{mux}$是\codex{imm} 的产生和传递，首先Control Unit解码出\codex{ImmSrc}，随后Extend在其控制下扩展出立即数\codex{ImmExt}，最后还需要经过MUX到达\codex{SrcB}。随后，$t_{alu}$ 完成计算产生地址偏移\codex{imm(rs1)} 的时间，$t_{mem}$ 是DMEM读取出数据\codex{[imm(rs1)]} 的时间，$t_{mux}$ 是该数据通过MUX到达\codex{Result} 的时间，最后，$t_{rf,setup}$ 是REGFILE写回\codex{rd} 在下一周期上升沿到来前的建立时间。
 
 经过化简，并根据\xref{tab:参考电路延时}注意到$t_{rf}=\SI{100}{ps}$和$t_{dec}+t_{ext}+t_{mux}=\SI{90}{ps}$
 \begin{Equation}
-    T_{c,single}=t_{pc,pcq}+2t_{mem}+t_{rf}+t_{alu}+t_{mux}+t_{rf,setup}
+    T_{c,single}=t_{pcq}+2t_{mem}+t_{rf}+t_{alu}+t_{mux}+t_{rf,setup}
 \end{Equation}
 将结果整理如下，并求出数值
 \begin{BoxFormula}[单周期处理器的最小周期]
     单周期处理器的最小周期是
     \begin{Equation}
-        \qquad\qquad\qquad
-        T_{c,single}=t_{pc,pcq}+2t_{mem}+t_{rf}+t_{alu}+t_{mux}+t_{rf,setup}=\SI{750}{ps}
-        \qquad\qquad\qquad
+        T_{c,single}=t_{pcq}+2t_{mem}+t_{rf}+t_{alu}+t_{mux}+t_{rf,setup}=\SI{750}{ps}
     \end{Equation}
 \end{BoxFormula}
 单周期处理器的$\te{CPI}$恒定为$1$，因为其任何指令都在一个周期内执行完成
 \begin{BoxFormula}[单周期处理器的指令平均周期数]
     单周期处理器的CPI是
     \begin{Equation}
-        \te{CPI}_{single}=1.0
+        \te{CPI}_{single}=1.00
     \end{Equation}
 \end{BoxFormula}
 单周期处理器在指令数$n=\SI{1e11}{}$下的程序执行时间$T=n\cdot\te{CPI}\cdot T_{c}$因而为

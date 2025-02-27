@@ -120,3 +120,46 @@
 
 \paragraph{状态S9（WBALU）、S10（WBMem）}
 状态S9（WBALU）、S10（WBMem）完成了对寄存器堆的写回。两者唯一的区别是\codex{Result} 的数据源，S9（WBALU）的源是\codex{ALUOut} 寄存器，S10（WBMem）的源是\codex{Data} 寄存器。待写回的数据\codex{rd} 通过MUX到达\codex{Result} 后连接到REGFILE的写数据端，同时\codex{instr} 中代表目标寄存器地址的字段\codex{xrd} 连接到REGFILE的写地址端，\code{RegWrite=1} 将数据写入。
+
+\subsection{多周期处理器的性能分析}
+多周期处理器可用的最短周期同样取决于最耗时的状态，这有两个潜在的可能。
+
+第一个是状态S0（Fetch），它从一个$t_{pcq}$开始，该时间内有两件事在同时发生，包括\codex{pc} 从\codex{PC} 寄存器中读出和控制单元中状态机新状态的读出，随后，在\codex{pc} 通过MUX前，由于MUX需要控制信号，要先等待$t_{dec}$的控制单元译码时间，随后是\codex{pc} 通过MUX的$t_{mux}$和ALU计算\codex{pc+4} 的$t_{alu}$，最后是\codex{pc+4} 通过MUX的$t_{mux}$以及写入\codex{PC} 寄存器需预留的$t_{setup}$
+\begin{Equation}
+    T_{c,multi,s1}=t_{pcq}+t_{dec}+t_{mux}+t_{alu}+t_{mux}+t_{setup}
+\end{Equation}
+第二个是状态S7（MemRead），它同样从$t_{pcq}$和$t_{dec}$开始，地址\codex{imm(rs1)} 从\codex{ALUOut} 寄存器读出，随后是顺次通过\codex{Result} 和\codex{Adr} 前的两个MUX的$2t_{mux}$和从MEM中读取数据\codex{[imm(rs1)]} 所需的$t_{mem}$，最后是数据\codex{[imm(rs1)]} 写入\codex{Data} 寄存器所需预留的$t_{setup}$
+\begin{Equation}
+    T_{c,multi,s7}=t_{pcq}+t_{dec}+2t_{mux}+t_{mem}+t_{setup}
+\end{Equation}
+
+综合两式，即有
+\begin{Equation}
+    T_{c,multi}=t_{pcq}+t_{dec}+2t_{mux}+\max(t_{mem},t_{alu})+t_{setup}
+\end{Equation}
+而根据\xref{tab:参考电路延时}，注意到MEM延时$t_{mem}=\SI{200}{ps}$比ALU延时$t_{alu}=120{ps}$更长
+\begin{Equation}
+    T_{c,multi}=t_{pcq}+t_{dec}+2t_{mux}+t_{mem}+t_{setup}
+\end{Equation}
+整理如下，并计算出数值
+\begin{BoxFormula}[多周期处理器的最小周期]
+    多周期处理器的最小周期是
+    \begin{Equation}
+        T_{c,multi}=t_{pcq}+t_{dec}+2t_{mux}+t_{mem}+t_{setup}=\SI{375}{ps}
+    \end{Equation}
+\end{BoxFormula}
+多周期处理器的$\te{CPI}$需要结合\xref{tab:参考指令类型比例}和\xref{tab:Main FSM各指令的状态转移过程}做加权平均得出
+\begin{BoxFormula}[多周期处理器的指令平均周期数]
+    多周期处理器的CPI是
+    \begin{Equation}
+        \te{CPI}_{multi}=4.14
+    \end{Equation}
+\end{BoxFormula}
+多周期处理器在指令数$n=\SI{1e11}{}$下的程序执行时间$T=n\cdot\te{CPI}\cdot T_{c}$因而为
+\begin{BoxFormula}[多周期处理器的程序执行时间]
+    多周期处理器的程序执行时间是
+    \begin{Equation}
+        T_{multi}=\SI{155}{s}
+    \end{Equation}
+\end{BoxFormula}
+若比较\xref{fml:多周期处理器的程序执行时间}和\xref{fml:单周期处理器的程序执行时间}，令人啼笑皆非的是，多周期处理器大费周章试图令简单的指令能更快执行，最终总的执行时间却比单周期处理器高了一倍。这有多方面原因，首先，多周期处理器为了更大程度的复用电路单元，数据通路上需要的MUX更多，这占用了一定时间。其次，理论上将一条指令拆分为$5$个步骤可以令周期变为原来的$1/5$，而有些指令只要$3,4$个步骤，那么还能赚些时间。但实际情况是，周期减小最终会受制于寄存器传播时间和准备时间之和$t_{pcq}+t_{setup}$，这是同步时序能工作的极限。多周期处理器将指令拆分后，每个小周期都会需要$t_{pcq}+t_{setup}$，而$t_{pcq}+t_{setup}$又占到了$T_{c,multi}$中相当一部分，这就抵消了其优化。
