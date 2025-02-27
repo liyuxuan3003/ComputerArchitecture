@@ -1,8 +1,122 @@
 \section{多周期处理器}
 
+多周期处理器的完整电路如\xref{fig:多周期RISC-V处理器}所示。通过\xref{sec:单周期处理器}的学习，我们已经知道单周期处理器有以下三个缺点：第一个缺点是它需要分离的IMEM和DMEM，然而大部分处理器只有一块MEM用来存储指令和数据。第二个缺点是它的时钟周期需要支持最慢的\codex{lw} 指令，即便其他指令需要的时间更少。第三个缺点是它需要三个加法器：一个用于ALU，两个用于PC，而加法器是硬件开销相对大的电路单元。而多周期处理器提出了一种解决上述缺点的方案。
 \begin{Figure}[多周期RISC-V处理器]
     \includegraphics[width=\linewidth]{build/Chapter07C_01.fig.pdf}
 \end{Figure}
 
-% 写=多少的控制信号，不写意味着不关心，即xxxx
-% 直接写的控制信号，不写意味着0，写意味着1
+多周期处理器对于这些缺点的解决思路是
+\begin{enumerate}
+    \item 多周期处理器将一条指令拆分为若干更小的步骤，REGFILE、ALU、MEM这三个耗时最长的元件（事实上指令\codex{lw} 最慢的原因就是它三者全部使用了）在每个步骤只被允许使用一次，以保证每个步骤具有基本相等的延时。而根据复杂程度不同，可以为不同的指令分配不同的周期数，简单的指令会使用较少的周期，复杂的指令则使用较多的周期。
+    \item 多周期处理器将IMEM和DMEM合并，指令的读取和数据的读写在不同周期进行。
+    \item 多周期处理器将两个PC加法器合并至ALU，其在不同周期以不同目的复用。
+    \item 多周期处理器需要添加一些非架构寄存器，在周期间保存中间结果。
+\end{enumerate}
+比较\xref{fig:多周期RISC-V处理器}和\xref{fig:单周期RISC-V处理器}，我们可以看出，多周期处理器相较于单周期处理器的主要改动包括：首先由于ALU合并了两个PC加法器，其\codex{SrcA} 和\codex{SrcB} 需要增加额外的MUX通道。现在ALU需要处理的计算除了\codex{rs1+rs2} 和\codex{rs1+imm} 还包含\codex{pc+4} 和\codex{pc+imm}，因此，\code{SrcB} 增加了\codex{4} 的输入，\code{SrcA} 增加了两个不同来源的\codex{pc} 的输入，一个直接来自\codex{PC} 寄存器，一个来自其寄存之后的\codex{PCCurr}，因为有些情况下我们需要立即得到这个信号，无法等到下个周期，这样的设计在多周期处理器中是很多见的。其次由于MEM合并了IMEM和DMEM，在MEM的地址输入端需要增加一个MUX确定地址是指令地址（来自\codex{PC}）还是数据地址（来自\codex{ALU}）。最后输出端的\codex{Result} 现在被接到REGFILE写回、MEM地址、PC寄存器三个位置，以适应电路单元复用所需的额外数据通路。同时要注意的是，尽管产生\codex{Result} 的MUX仍然是三通道，但是内容和单周期处理器不一样，现在三个通道分别是ALU的计算结果\codex{ALUResult} 和其寄存一拍后的\codex{ALUOut}（新增，原先单周期的\codex{PCPlus4} 不再需要），以及MEM读出的\codex{Data}。
+
+\subsection{多周期RISC-V处理器的控制单元}
+多周期RISC-V处理器的控制单元如\xref{fig:多周期RISC-V处理器的有限状态机}所示，注意到最大的变化是Main Decoder变成了一个状态机Main FSM。这是因为多周期处理器中，指令需要多个周期才能执行完成，大部分控制信号在同一个指令的不同周期间是需要变化的，故需要一个状态机来支持。当然，有一个例外是\codex{ImmSrc} 信号，由于立即数的扩展模式在同一指令的执行中不变，故置于状态机之外。
+\begin{Figure}[多周期RISC-V处理器的控制单元]
+    \includegraphics[scale=0.8]{build/Chapter07C_13.fig.pdf}
+\end{Figure}
+% 通过两个控制信号的“重命名”，我们可以洞见从单周期处理器到多周期处理器的\codex{PC} 寄存器更新方式的差别。这两个“重命名”分别是\codex{Jump->PCUpdte} 和\codex{PCSrc->PCWrite}。单周期处理器中，\code{PCSrc} 控制MUX在\codex{pc}
+
+\xref{fig:多周期RISC-V处理器}展示了多周期处理器控制单元的有限状态机的状态转移逻辑。简洁起见，并不是每一个控制信号都被标出，我们遵循这样的约定：如\codex{ALUOp=00} 这样显式指明赋值的控制信号，在其未出现的状态中被认为是不重要的，可以取任意值（即\codex{x}）。不同的是，如\codex{PCUpdte} 这样仅名称出现的控制信号（均为$\SI{1}{bit}$），在其出现的状态中代表赋\codex{1}，在其未出现的状态中代表赋\codex{0}。
+
+\begin{Figure}[多周期RISC-V处理器的有限状态机]
+    \includegraphics[width=\linewidth]{build/Chapter07C_14.fig.pdf}
+\end{Figure}
+
+\xref{tab:Main FSM各指令的状态转移过程}展示了各个指令类型的状态转移过程。S0和S1是所有指令都需经历的，LOAD类型需要经历最多的$5$个状态，BRANCH类型则只需最少的$3$个状态，大部分都是$4$个状态。
+
+\begin{Tablex}[Main FSM各指令的状态转移过程]{lYl*{4}{@{\hspace{7pt}}l}}
+    <类型&状态数&\mc{5}(l){状态转移路径}\\>
+    I/LOAD&5&S0（Fetch）&S1（Decode）&S2（MemAdr）&S7（MemRead）&S10（MemWB）\\
+    S/STORE&4&S0（Fetch）&S1（Decode）&S2（MemAdr）&S8（MemWrite）\\
+    R/OP&4&S0（Fetch）&S1（Decode）&S3（ExcuteR）&S8（ALUWB）\\
+    I/OP-IMM&4&S0（Fetch）&S1（Decode）&S4（ExcuteI）&S8（ALUWB）\\
+    J/JAL&4&S0（Fetch）&S1（Decode）&S5（Jump）&S8（ALUWB）\\
+    B/BRANCH&3&S0（Fetch）&S1（Decode）&S6（Branch）\\
+\end{Tablex}\goodbreak
+
+\xref{tab:Main FSM的真值表}以表格形式展示了\xref{fig:多周期RISC-V处理器}的状态机的各个状态下，所有控制信号的取值。
+
+\begin{Tablex}[Main FSM的真值表]{X*{10}{@{\hspace{4.2pt}}>{\ttfamily}c}}
+    <状态&AdrSrc&ALUSrcA&ALUSrcB&ALUOp&ResultSrc&MemWrite&RegWrite&IRWrite&PCUpdte&Branch\\>
+    S0 & 0 & 00 & 10 & 00 & 10 & 0 & 0 & 1 & 1 & 0\\
+    S1 & x & 01 & 01 & 00 & xx & 0 & 0 & 0 & 0 & 0\\ \hlinelig
+    S2 & x & 10 & 01 & 00 & xx & 0 & 0 & 0 & 0 & 0\\ 
+    S3 & x & 10 & 00 & 10 & xx & 0 & 0 & 0 & 0 & 0\\ 
+    S4 & x & 10 & 01 & 10 & xx & 0 & 0 & 0 & 0 & 0\\ 
+    S5 & x & 01 & 10 & 00 & 00 & 0 & 0 & 0 & 1 & 0\\
+    S6 & x & 10 & 00 & 01 & 00 & 0 & 0 & 0 & 0 & 1\\ \hlinelig
+    S7 & 1 & xx & xx & xx & 00 & 0 & 0 & 0 & 0 & 0\\
+    S8 & 1 & xx & xx & xx & 00 & 1 & 0 & 0 & 0 & 0\\ \hlinelig
+    S9 & x & xx & xx & xx & 00 & 0 & 1 & 0 & 0 & 0\\
+    S10& x & xx & xx & xx & 01 & 0 & 1 & 0 & 0 & 0\\
+\end{Tablex}
+
+\subsection{多周期处理器的数据通路}
+多周期处理器的分析难点在于，一条指令的执行需要经历若干状态，而每个状态都意味着一张不同的数据通路，有些状态又会被不同指令复用。\xref{tab:多周期RISC-V处理器的数据通路}展示了S0至S10的数据通路。
+
+接下来，我们会逐一分析多周期处理器每个状态的数据通路。
+\begin{TableLong}[多周期RISC-V处理器的数据通路]{|c|c|}*
+    <\hlinemid>()
+    \mcx<c>{2}[1.0ex][-1.0ex](|c|){\includegraphics[width=0.47\linewidth]{build/Chapter07C_02.fig.pdf}}\\*
+    \mcx<c>{2}(|c|){S0 : Fetch}\\ \hlinemid
+    % ----------------%
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_03.fig.pdf}}&
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_04.fig.pdf}}\\*
+    S1 : Decode&S2 : MemAdr\\ \hlinemid
+    % ----------------%
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_05.fig.pdf}}&
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_06.fig.pdf}}\\*
+    S3 : ExcuteR&S4 : ExcuteI\\ \hlinemid
+    % ----------------%
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_07.fig.pdf}}&
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_08.fig.pdf}}\\*
+    S5 : Jump&S6 : Branch\\ \hlinemid
+    % ----------------%
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_09.fig.pdf}}&
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_10.fig.pdf}}\\*
+    S7 : MemRead&S8 : MemWrite\\ \hlinemid
+    % ----------------%
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_11.fig.pdf}}&
+    \xcell<c>[1.0ex][-1.0ex]{\includegraphics[width=0.47\linewidth]{build/Chapter07C_12.fig.pdf}}\\*
+    S9 : WBALU&S10 : WBMem\\ \hlinemid
+    % ----------------%
+\end{TableLong}
+
+\paragraph{状态S0（Fetch）}
+状态S0（Fetch）的主要功能是根据当前指令地址\codex{pc} 取出指令\codex{instr} 并计算顺序执行的下一指令地址\codex{pc+4}。该状态从\codex{pc} 从PC寄存器中取出开始，它会经历三条并行路径。第一条路径是\codex{pc} 通过MUX到达\codex{Adr} 即MEM的地址端，从MEM中取出指令内容\codex{instr} 并写入寄存器\codex{Instr}。第二条路径是\codex{pc} 直接写入寄存器\codex{PCCurr}。应指出，后续寄存器\codex{PCCurr} 和\codex{Instr} 会由于\codex{IRWrite} 信号的撤去使写入的\codex{pc} 和\codex{instr} 被锁存住，在整个指令执行期间始终保持可用。第三条路径是\codex{pc} 通过MUX到达\codex{SrcA}，同时\codex{SrcB} 则为\codex{4}，两者经过ALU得到\codex{pc+4}，作为\codex{ALUResult} 通过MUX到达\codex{Result} 并写回\codex{PC} 寄存器，作为下一指令的地址。若之后发现执行的是分支指令或跳转指令，且确实需要跳转，会再次覆写\codex{PC} 寄存器。
+
+这里有必要说明的是\codex{SrcA} 和\codex{Result} 前的两个MUX，它们都对相似的信号有两个通道
+\begin{itemize}
+    \item 产生\codex{SrcA} 的MUX的\codex{00,01} 通道分别是\codex{PC} 和\codex{PCCurr}，为何需要为\codex{pc} 保留两条通路呢？首先，虽说\codex{PCCurr} 寄存器在这一步就是写入了\codex{PC} 寄存器中读出的\codex{pc}，然而，寄存器的写入需要等待下一周期的上升沿才生效，所以必须得保留一条连接到\codex{PC} 寄存器的快速通道，以保证当前周期\codex{pc} 就能送到ALU。另一方面，由于\codex{PC} 寄存器在该状态后就会被写入下一指令的地址，因此后续如果再需要\codex{pc}，就得从\codex{PCCurr} 寄存器获取了。
+    \item 产生\codex{Result} 的MUX的\codex{00,01} 通道分别是\codex{ALUOut} 和\codex{ALUResult}，后者是ALU的计算结果，前者是ALU的计算结果寄存一拍的结果。因为在有些情况下对ALU计算结果的使用过于耗时，以至于我们需要先将ALU计算结果存起来，在下一周期继续使用。
+\end{itemize}
+
+\paragraph{状态S1（Decode）}
+状态S1（Decode）的主要功能是完成指令解码，但同时，它会计算\codex{pc+imm} 作为假如进行跳转的下一指令地址。首先，指令内容\codex{instr} 从寄存器\codex{Instr} 发出，指令各字段被分拆进入不同的单元。扩展字段\codex{op,funct3,funct7} 进入控制单元，确定后续的状态转移路径，并产生\codex{ImmSrc} 信号，寄存器字段\codex{xrs1,xrs2} 进入REGFILE，读出寄存器数据\codex{rs1,rs2} 并写入寄存器\codex{A,B}。立即数字段\codex{ximm} 进入Extend并在\codex{ImmSrc} 的控制下产生立即数\codex{imm}，不过并没有写入寄存器，但由于整个执行过程中\codex{instr} 始终有效，故不妨碍。立即数\codex{imm} 通过MUX到达\codex{SrcB}，而同时，\code{pc} 从\codex{PCCurr} 寄存器读出通过MUX到达\codex{SrcA}，两者经过ALU得到\codex{pc+imm}，该结果会先写入\codex{ALUOut} 寄存器。当然，对于大部分与跳转无关的指令，该处进行的计算看上去毫无意义，但不妨碍我们先做好准备。若不涉及跳转，后续会抛弃这个结果。
+
+\paragraph{状态S2（MemAdr）、S3（ExcuteR）、S4（ExcuteI）、S5（Jump）、S6（Branch）}
+状态S2（MemAdr）、S3（ExcuteR）、S4（ExcuteI）、S5（Jump）、S6（Branch）是五个平级的状态，它们的共同点是，各自完成了其指令类型中最重要的一次ALU计算
+
+\begin{itemize}
+    \item 状态S2（MemAdr）进行加法计算，得到MEM地址\codex{imm(rs1)}。
+    \item 状态S3（ExcuteR）和S4（ExcuteI）对\codex{rs1,rs2} 或\codex{rs1,imm} 进行指定的ALU运算。
+    \item 状态S5（Jump）进行加法计算，得到用于写回REGFILE的\codex{pc+4}。
+    \item 状态S6（Branch）进行减法计算，通过\codex{rs1-rs2} 是否为零判断两者是否相等。
+\end{itemize}
+
+除了S6（Branch）之外，其余的ALU结果都会写入寄存器\codex{ALUOut} 等待下一周期的使用，其中，我们将S3（ExcuteR）、S4（ExcuteI）、S5（Jump）的ALU结果统一记为\codex{rd}，因为这三者的结果最终都是用于写回REGFILE，作为对比，S2（MemAdr）的ALU结果\codex{imm(rs1)} 则是作为MEM地址。对于S6（Branch），其关注ALU产生的\codex{Zero} 信号，这会送至控制单元。
+
+在这些状态中，状态S5（Jump）和S6（Branch）还需要额外关心的一点是，是否要用当前周期寄存器\codex{ALUOut} 存储的跳转地址\codex{pc+imm} 覆盖寄存器\codex{PC} 中存储的顺序地址\codex{pc+4}。参照控制单元\xref{fig:多周期RISC-V处理器的控制单元}的内部电路，对于状态S6（Branch），状态机输出\codex{Branch=1}，当同时收到\codex{Zero=1} 时更新指令地址。对于状态S5（Jump），状态机输出\codex{PCUpdate=1} 更新指令地址。值得注意的是，之所以这里\codex{PCUpdate} 不对应称为\codex{Jump}，是因为S0（Fetch）写入\codex{pc+4} 时也是通过该信号进行的，其本质是进行无条件的指令地址更新，而不仅仅用于跳转时。除此之外，很有趣的是，尽管\codex{pc+4} 在S0（Fetch）已经被计算，但是S5（Jump）中又计算了一遍\codex{pc+4}，作为写回REGFILE的数据。重复计算听上去很愚蠢，但这也同时避免了更多状态的添加。
+
+在这里还有一个细节，上述五个状态中，只有S2（MemAdr）标注了寄存器\codex{B} 中刷新\codex{rs2} 的通路，这意味着其后续状态仍会使用\codex{rs2}。它在S8（MemWrite）作为写入MEM的数据。
+
+\paragraph{状态S7（MemRead）、S8（MemWrite）}
+状态S7（MemRead）、S8（MemWrite）分别完成了存储器的读和写。两者大部分数据通路是相同的，寄存器\codex{ALUOut} 存储的\codex{imm(rs1)} 通过MUX到达\codex{Result}，控制信号\codex{AdrSrc=1} 使MEM接受\codex{Result} 而不是\codex{PC} 作为地址，从而使\codex{imm(rs1)} 送至MEM地址端。不同之处在于，对于S7（MemRead），\code{MemWrite=0} 使数据\codex{[imm(rs1)]} 自MEM被读出，并写入寄存器\codex{Data}，遵照前例，也记为\codex{rd}。对于S8（MemWrite），在寄存器\codex{B} 中的\codex{rs2} 被送至MEM的写数据端，同时，\code{MemWrite=1} 使MEM进行写状态，使\codex{rs2} 被写入地址\codex{imm(rs1)} 处。
+
+\paragraph{状态S9（WBALU）、S10（WBMem）}
+状态S9（WBALU）、S10（WBMem）完成了对寄存器堆的写回。两者唯一的区别是\codex{Result} 的数据源，S9（WBALU）的源是\codex{ALUOut} 寄存器，S10（WBMem）的源是\codex{Data} 寄存器。待写回的数据\codex{rd} 通过MUX到达\codex{Result} 后连接到REGFILE的写数据端，同时\codex{instr} 中代表目标寄存器地址的字段\codex{xrd} 连接到REGFILE的写地址端，\code{RegWrite=1} 将数据写入。

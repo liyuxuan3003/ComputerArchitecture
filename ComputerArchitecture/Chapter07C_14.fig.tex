@@ -1,0 +1,53 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}[font=\ttfamily]
+
+\foreach \x/\y/\c/\num/\name/\control in
+{
+    1/0/black/0/Fetch/AdrSrc=0\\ IRWrite\\ ALUSrcA=00\\ ALUSrcB=10\\ ALUOp=00\\ ResultSrc=10\\ PCUpdate,%
+    2/0/black/1/Decode/ALUSrcA=01\\ ALUSrcB=01\\ ALUOp=00\\ {}\\ {},%
+    0/1/green/2/MemAdr/ALUSrcA=10\\ ALUSrcB=01\\ ALUOp=00\\ {}\\ {},%
+    1/1/green/3/ExcuteR/ALUSrcA=10\\ ALUSrcB=00\\ ALUOp=10\\ {}\\ {},%
+    2/1/green/4/ExcuteI/ALUSrcA=10\\ ALUSrcB=01\\ ALUOp=10\\ {}\\ {},%
+    3/1/green/5/Jump/ALUSrcA=01\\ ALUSrcB=10\\ ALUOp=00\\ ResultSrc=00\\ PCUpdate,%
+    4/1/green/6/Branch/ALUSrcA=10\\ ALUSrcB=00\\ ALUOp=01\\ ResultSrc=00\\ Branch,%
+    0/2/red/7/MemRead/ResultSrc=00\\ AdrSrc=1\\ {}\\ {}\\ {},%
+    1/2/red/8/MemWrite/ResultSrc=00\\ AdrSrc=1\\ MemWrite\\ {}\\ {},%
+    2/2/blue/9/ALUWB/ResultSrc=00\\ RegWrite\\ {}\\ {}\\ {},%
+    0/3/blue/10/MemWB/ResultSrc=01\\ RegWrite\\ {}\\ {}\\ {}%
+}
+{
+    \path (\x*7.5,-\y*7.5) node[circle,draw,align=center,ultra thick,inner sep=0cm,minimum width=5.9cm,fill=\c!10!white] (S\num) {{\LARGE\bfseries\rmfamily S\num\;:\;\name}\\ \control};
+}
+
+\path (S6.east) ++ (1,0) coordinate (xBack);
+\path (S0.north) ++ (0,1) coordinate (yBack);
+\path (S0.west) ++(-3,0) coordinate (xReset);
+
+\tikzset{trans/.style={font=\rmfamily\large}}
+
+\begin{scope}[very thick,-latex]
+    \draw (S0) -- (S1);
+    \draw (S1) -- node[above left,pos=0.65,trans] {I/LOAD\quad S/STORE} (S2);
+    \draw (S1) -- node[above left,pos=0.61,trans] {R/OP} (S3);
+    \draw (S1)  -- node[left,pos=0.5,trans] {I/OP-IMM} (S4);
+    \draw (S1) -- node[below left,pos=0.39,trans] {J/JAL} (S5);
+    \draw (S1) -- node[above right,pos=0.65,trans] {B/BRANCH} (S6);
+    \draw (S2) -- node[right,pos=0.5,trans] {I/LOAD} (S7);
+    \draw (S2) -- node[above right,pos=0.6,trans] {S/STORE} (S8);
+    \draw (S3) -- node[below left,pos=0.39,trans] {R/OP} (S9);
+    \draw (S4) -- node[left,pos=0.5,trans] {I/OP-IMM}  (S9);
+    \draw (S5) -- node[above left,pos=0.61,trans] {J/JAL} (S9);
+    \draw (S7) -- node[right,pos=0.5,trans] {I/LOAD}  (S10);
+    \draw (S8) -- node[right,trans] {S/STORE} (S8|-S10);
+    \draw (S9) -- node[right,trans] {R/OP\quad I/OP-IMM\quad J/JAL} (S9|-S10);
+    \draw (S6) -- node[right,trans] {B/BRANCH} (S6|-S10);
+    \draw (S10.east) node[above right,trans] {I/LOAD} -| (xBack|-yBack) -| (S0);
+    \draw (xReset|-S0) node[left,trans] {RESET} -- (S0);
+\end{scope}
+
+\draw[ultra thin] ($(S10.west|-S10.south)+(-0.5,-0.5)$) rectangle ($(xBack|-yBack)+(0.5,0.5)$);
+
+\end{tikzpicture}
+\end{document}

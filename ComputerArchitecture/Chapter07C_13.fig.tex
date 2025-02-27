@@ -3,9 +3,11 @@
 \begin{document}
 \begin{tikzpicture}[font=\ttfamily]
 
-\path (0,0) node[control,minimum height=7*0.8cm] (MD) {Main\\ Decoder};
+\path (0,0) node[control,minimum height=9*0.8cm] (MD) {Main\\ FSM};
 
-\path (MD.south) ++(0,-1.5) node[control,anchor=north,minimum height=3*0.8cm] (AD) {ALU\\ Decoder};
+\path (MD.south) ++(0,-1.0) node[control,anchor=north,minimum height=3*0.8cm] (AD) {ALU\\ Decoder};
+
+\path (AD.south) ++(0,-1.0) node[control,anchor=north,minimum height=3*0.8cm] (ID) {Instr\\ Decoder};
 
 \path (MD.west) ++ (-1,0) coordinate (xL);
 \path (MD.east) ++(1,0) coordinate (xR);
@@ -13,35 +15,44 @@
 \foreach \tar/\n/\side/\lab in
 {
     MD/1/east/Branch,
-    MD/2/east/Jump,
-    MD/3/east/ResultSrc,
+    MD/2/east/PCUpdate,
+    MD/3/east/RegWrite,
     MD/4/east/MemWrite,
-    MD/5/east/ALUSrcB,
-    MD/6/east/ImmSrc,
-    MD/7/east/RegWrite,
-    MD/5/west/op,
+    MD/5/east/IRWrite,
+    MD/6/east/ResultSrc,
+    MD/7/east/ALUSrcB,
+    MD/8/east/ALUSrcA,
+    MD/9/east/AdrSrc,
+    MD/7/west/op,
     AD/2/east/ALUControl,
     AD/1/west/op,
     AD/2/west/funct3,
-    AD/3/west/funct7%
+    AD/3/west/funct7,
+    ID/2/west/op,
+    ID/2/east/ImmSrc%
 }
 {
-    \ifthenelse{\equal{\tar}{MD}}{\def\total{7}}{}
+    \ifthenelse{\equal{\tar}{MD}}{\def\total{9}}{}
     \ifthenelse{\equal{\tar}{AD}}{\def\total{3}}{}
+    \ifthenelse{\equal{\tar}{ID}}{\def\total{3}}{}
     \path ($(\tar.north \side)!\fpeval{(0.5/\total)+(1/\total)*(\n-1)}!(\tar.south \side)$) coordinate (\tar-\lab);
 }
 
 \foreach \a/\b/\name in
 {
     MD-op/xL/op[6:0],
-    MD-ResultSrc/xR/ResultSrc[1:0],
-    MD-MemWrite/xR/MemWrite,
-    MD-ALUSrcB/xR/ALUSrcB,
-    MD-ImmSrc/xR/ImmSrc[1:0],
     MD-RegWrite/xR/RegWrite,
+    MD-MemWrite/xR/MemWrite,
+    MD-IRWrite/xR/IRWrite,
+    MD-ResultSrc/xR/ResultSrc[1:0],
+    MD-ALUSrcB/xR/ALUSrcB[1:0],
+    MD-ALUSrcA/xR/ALUSrcA[1:0],
+    MD-AdrSrc/xR/AdrSrc,
     AD-funct3/xL/funct3[2:0],
     AD-funct7/xL/funct7[5],
-    AD-ALUControl/xR/ALUControl[2:0]%
+    AD-ALUControl/xR/ALUControl[2:0],
+    ID-op/xL/op[6:0],
+    ID-ImmSrc/xR/ImmSrc[2:0]%
 }
 {
     \ifthenelse{\equal{\b}{xL}}{\def\direction{left}}{}
@@ -49,7 +60,7 @@
     \draw[line control] (\a) -- (\b|-\a) node[\direction,signal] {\name} node[ocirc] {};
 }
 
-\path (xR|-MD-Jump) ++(2.0,1.0) node[digital,or port,anchor=in 2] (OR) {};
+\path (xR|-MD-PCUpdate) ++(2.0,1.0) node[digital,or port,anchor=in 2] (OR) {};
 
 \path (OR.in 1) ++(-1.0,0.5) node[digital,and port,anchor=out] (AND) {};
 
@@ -60,16 +71,16 @@
 
 \path (xL) ++ (0.3,0) coordinate (xOP);
 
-\draw[line control] (MD-Jump) -- (xJump|-MD-Jump) node[right,signal] {Jump} |- (OR.in 2);
+\draw[line control] (MD-PCUpdate) -- (xJump|-MD-PCUpdate) node[right,signal] {PCUpdate} |- (OR.in 2);
 \draw[line control] (MD-Branch) -- (xBranch|-MD-Branch) node[below,signal] {Branch} |- (AND.in 2);
 \draw[line control] (AND.out) -- (xAND2OR|-AND.out) |- (OR.in 1);
 \draw[line control] (xL|-AND.in 1) node[left,signal] {Zero} node[ocirc] {} -- (AND.in 1);
 \draw[line control] (xOP|-MD-op) node[below right,yshift=-0.2cm,signal] {\scalebox{0.5}{[5]}} node[circ] {} -- (xOP|-AD-op) node[left,signal] {op[5]} -- (AD-op);
-\draw[line control] (OR.out) -- (xPCSrc|-OR.out) node[right,signal] {PCSrc} node[ocirc] {};
+\draw[line control] (OR.out) -- (xPCSrc|-OR.out) node[right,signal] {PCWrite} node[ocirc] {};
 
 \draw[line control,-latex] (MD.south) -- node[right,signal] {ALUOp[1:0]} (AD.north);
 
-\draw[ultra thin] ($(xL|-AD.south)+(-2.5,-0.3)$) rectangle ($(xPCSrc|-AND.north)+(1.7,0.3)$); 
+\draw[ultra thin] ($(xL|-ID.south)+(-2.5,-0.3)$) rectangle ($(xPCSrc|-AND.north)+(1.7,0.3)$); 
 
 \end{tikzpicture}
 \end{document}
