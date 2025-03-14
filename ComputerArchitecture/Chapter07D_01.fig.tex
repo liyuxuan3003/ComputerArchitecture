@@ -1,9 +1,436 @@
 \documentclass{xStandalone}
 
 \begin{document}
-\begin{tikzpicture}
+\begin{tikzpicture}[font=\ttfamily]
 
-    
+% Stage REG
+\path (0,0)
+    ++ (0,0) coordinate (xMW)
+    ++ (-8,0) coordinate (xEM)
+    ++ (-14,0) coordinate (xDE)
+    ++ (-9,0) coordinate (xFD);
+
+\path (0,0) coordinate (yC);
+
+\tikzset{register tall/.style={register,minimum height=17cm}}
+\tikzset{register short/.style={register,minimum height=10cm}}
+
+\path (yC) ++(0,1.0) coordinate (yStageReg);
+
+\draw (xMW|-yStageReg) node[register tall] (MW) {};
+\draw (xEM|-yStageReg) node[register tall] (EM) {};
+\draw (xDE|-yStageReg) node[register tall] (DE) {};
+\draw (xFD|-DE.south) node[register short,anchor=south] (FD) {};
+
+% IMEM
+\path (FD.west|-yC) ++ (-1.5,0) node[mem,anchor=east] (IMEM) {Instr\\ Memory};
+
+% DMEM
+\path (MW.west|-yC) ++ (-2.5,0) node[mem,anchor=east] (DMEM) {Data\\ Memory};
+
+% REGFILE
+\path (FD.east|-yC) ++ (2.5,0) node[regfile,anchor=west] (REGFILE) {Register\\ File};
+
+% Marker on IMEM/DMEM/REGFILE
+\foreach \block/\n/\side/\text in
+{%
+    IMEM/1/west/A,
+    IMEM/1/east/RD,
+    DMEM/1/west/A,
+    DMEM/1/east/RD,
+    DMEM/4/west/WD,
+    REGFILE/1/west/A1,
+    REGFILE/2/west/A2,
+    REGFILE/3/west/A3,
+    REGFILE/4/west/WD3,
+    REGFILE/1/east/RD1,
+    REGFILE/2/east/RD2%
+}%
+{
+    \path ($(\block.north \side)!\fpeval{0.2+0.2*(\n-1)}!(\block.south \side)$) coordinate (\block -\text) node[anchor=\side] {\text};
+}
+
+% ---- Fetch ---- %
+
+% REG PC
+\path (IMEM-A) ++ (-1.0,0) node[register,anchor=east] (REGPC) {};
+
+% MUX PCNext
+\path (REGPC.west) ++(-1.5,0) node[mux21,anchor=east] (MUXPCNext) {};
+
+% ADD PCPlus4
+\path (IMEM.south west) ++ (0,-2.0) node[add,anchor=north west] (ADDPCPlus4) {\rotatebox{90}{ADD}};
+
+% x
+\path (MUXPCNext.blpin 1) ++(-0.50,0) coordinate (xMUXPCNextin1);
+\path (MUXPCNext.blpin 2) ++(-1.00,0) coordinate (xMUXPCNextin2) ++(-1.5,0) coordinate (xL);
+\path (ADDPCPlus4.east) ++(0.5,0) coordinate (xPCPlus4);
+\path ($(REGPC.east)!0.5!(IMEM.west)$) coordinate (xPC);
+
+% y
+\path (ADDPCPlus4.south) ++ (0,-0.5) coordinate (yPCPlus4);
+
+% ---- Decode ---- %
+
+% IMM Extend
+\path (REGFILE.south) ++ (0,-3.5) node[extend,anchor=north] (IMMExtend) {Extend};
+
+% Control Unit
+\path (REGFILE.north west) ++ (0,1.5) node[control,anchor=south west] (ControlUnit) {Control\\ Unit};
+
+% x
+\path (FD.east|-IMEM-RD) ++(1.5,0) coordinate (xInstr);
+\path (REGFILE.east) ++(0.5,0) coordinate (xImmSrc);
+\path (DE.west) ++(-1.85,0) coordinate (xRs2D) ++(-0.5,0) coordinate (xRs1D);
+
+\path (xInstr) ++ (-0.5,0) coordinate (xREGFILERdW) ++ (-0.5,0) coordinate (xREGFILEResult);
+
+% y
+\foreach \n/\name in {0/ImmSrc,1/PC,2/Rs1,3/Rs2,4/Rd}
+{
+    \path ($(REGFILE.south)!\fpeval{(\n+0.5)/5}!(IMMExtend.north east)$) coordinate (y\name);
+}
+
+% ---- Excute ---- %
+
+% MUX Rs1Data
+\path (DE.east|-REGFILE-RD1) ++(4.5,0) node[mux31,anchor=blpin 1] (MUXRs1Data) {};
+
+% MUX Rs2Data
+\path (MUXRs1Data|-DMEM-WD) ++(1,0) node[mux31] (MUXRs2Data) {}; 
+
+% ALU
+\path (EM.west|-DMEM-A) ++ (-2.25,0) node[add,anchor=brpin 2] (ALU) {\rotatebox{90}{ALU}};
+
+% MUXSrcB
+\path (ALU.blpin 2) ++ (-1.5,0) node[mux21,anchor=east] (MUXSrcB) {};
+
+% ADD PCTarget
+\path (ALU.south|-yPC) ++(-2.5,0.5) node[add,anchor=blpin 1] (ADDPCTarget) {\rotatebox{90}{ADD}};
+
+% OR PCSrc
+\path (MUXRs1Data.west|-DE.north) ++(0,1.0) node[digital,or port,anchor=out,xscale=-1] (ORPCSrc) {};
+
+% AND PCSrc
+\path (ORPCSrc.in 1) ++(1,0) node[digital,and port,anchor=out,xscale=-1] (ANDPCSrc) {};
+
+% x
+\path (DE.east) ++(0.5,0) coordinate (xRdE) ++(0.5,0) coordinate (xRs2E) ++(0.5,0) coordinate (xRs1E) ++(0.5,0) coordinate (xPCE) coordinate (xImmExtE) ++(0.5,0) coordinate (xPCSrcE);
+
+\path (MUXRs1Data.west) ++(-0.5,0) coordinate (xFromMEM) ++ (-0.5,0) coordinate (xFromWB) ++ (-0.5,0) coordinate (xRs2Data);
+
+\path (ORPCSrc.out) ++ (-0.5,0) coordinate (xORout);
+\path (ORPCSrc.in 2) ++ (0.5,0) coordinate (xORin2);
+\path (ANDPCSrc.in 2) ++ (0.5,0) coordinate (xANDin2);
+
+\path (MUXRs1Data.east) ++(0.5,0) coordinate (xMUXRs1Dataout); 
+\path (MUXRs2Data.east) ++(0.5,0) coordinate (xMUXSrcBin1);
+\path (MUXSrcB.west) ++(-0.5,0) coordinate (xMUXSrcBin2);
+\path (ADDPCTarget.east) ++(1.0,0) coordinate (xPCTarget);
+\path (ALU.west) ++(-0.5,0) coordinate (xResultSrc);
+\path (ALU.east) ++(0.5,0) coordinate (xZero);
+
+% y
+\path (EM.south) ++(0,-0.5) coordinate (yPCTarget);
+
+% ---- Memory ----%
+
+% x
+\path (DMEM.west) ++(-0.5,0) coordinate (xALUResult);
+\path (DMEM.west) ++(0.5,0) coordinate (xRdM);
+\path (DMEM.east) ++(0.25,0) coordinate (xRegWriteM); 
+
+\path (DMEM.north) ++(0,1) coordinate (yALUResult);
+
+% y
+\path (yPCTarget) ++(0,-0.5) coordinate (yALUResultWB);
+
+
+% ---- WriteBack ---- %
+
+% MUXResult
+\path (MW.east|-DMEM-RD) ++(2.25,0) node[mux31,anchor=blpin 2] (MUXResult) {};
+
+% x
+\path (MUXResult.west) ++(-0.5,0) coordinate (xMUXResultin);
+\path (MUXResult.east) ++(0.5,0) coordinate (xResult) ++(0.5,0) coordinate (xRegWriteW) ++(2.0,0) coordinate (xR);
+\path (MW.east) ++(0.5,0) coordinate (xRdW);
+
+% y
+\path (yALUResultWB) ++(0,-0.5) coordinate (yRdW) ++(0,-0.5) coordinate (yResult);
+
+\path (ORPCSrc.north) ++(0,0.5) coordinate (yRegWrite) ++ (0,1) coordinate (yStageB) ++(0,1) coordinate (yStageA) ++ (0,1) coordinate (yA);
+
+\path ($(yStageA)!0.5!(yStageB)$) coordinate (yStage);
+
+% ---- Hazard ---- %
+
+\path ($(xL)!0.5!(xR)$) coordinate (xHazard);
+
+% Hazard
+\path (xHazard|-yResult) ++(0,-2.25) node[digital,draw,rectangle,anchor=north,minimum width=45cm,minimum height=1.2cm] (Hazard) {Hazard Unit};
+
+\path (Hazard.south) ++ (0,-1) coordinate (yB);
+
+% ---- Clock Mark ---- %
+\foreach \block/\x in
+{
+    REGPC/0.5,
+    REGFILE/0.33,
+    DMEM/0.33,
+    FD/0.5,
+    DE/0.5,
+    EM/0.5,
+    MW/0.5%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) node[clk] (\block -CLK) {};
+    \draw[line control] (\block -CLK) -- ++(0,0.5) node[ocirc] {} node[above] {CLK};
+}
+
+\path (REGFILE-CLK.north) node[ocirc,scale=1.5,line data] {};
+
+% ---- WE Mark ---- %
+\foreach \block/\x in
+{
+    REGFILE/0.67,
+    DMEM/0.67%
+}
+{
+    \path ($(\block.north west)!\x!(\block.north east)$) coordinate (\block -WE) node[below] {WE};
+}
+
+% ---- EN Mark ---- %
+\foreach \block in {REGPC,FD}
+{
+    \path (\block.south) ++(-0.13,0) coordinate (\block-EN) node[above] {\rotatebox{90}{EN}};
+}
+
+% ---- CLR Mark ---- %
+\foreach \block in {FD,DE}
+{
+    \path (\block.south) ++(+0.13,0) coordinate (\block-CLR) node[above] {\rotatebox{90}{CLR}};
+}
+
+% ---- Control Unit Signal ----%
+\foreach \n/\side/\label in
+{
+    1/east/RegWrite,
+    2/east/ResultSrc,
+    3/east/MemWrite,
+    4/east/Jump,
+    5/east/Branch,
+    6/east/ALUControl,
+    7/east/ALUSrcB,
+    8/east/ImmSrc,
+    6/west/op,
+    7/west/funct3,
+    8/west/funct7%
+}
+{
+    \path ($(ControlUnit.north \side)!\fpeval{(0.5/8)+(1/8)*(\n-1)}!(ControlUnit.south \side)$) coordinate (CU-\label);
+}
+
+\foreach \label in {op,funct3,funct7}
+{
+    \path (CU-\label) node[right,signal] {\label};
+}
+
+% ---- Mux21 Mark ---- %
+\foreach \mux in {MUXPCNext,MUXSrcB}
+{
+    \path (\mux.blpin 1) node[muxopt] {0};
+    \path (\mux.blpin 2) node[muxopt] {1};
+}
+
+% ---- Mux31 Mark ---- %
+\foreach \mux in {MUXRs1Data,MUXRs2Data,MUXResult}
+{
+    \path (\mux.blpin 1) node[muxopt] {00};
+    \path (\mux.blpin 2) node[muxopt] {01};
+    \path (\mux.blpin 3) node[muxopt] {10};
+}
+
+% --------------------------------------------------------- %
+% --------------------------------------------------------- %
+% --------------------------------------------------------- %
+% --------------------------------------------------------- %
+
+% ---- Fetch ---- %
+\draw[line data] (MUXPCNext.brpin 1) -- node[above,signal] {PCNextF} (REGPC.west);
+\draw[line data] (REGPC.east) -- node[above,signal] {PCF} (IMEM-A);
+\draw[line data] (IMEM-RD) -- node[above] {InstrF} (FD.west|-IMEM-RD);
+\draw[line data] (xPC|-IMEM-A) node[circ] {} |- (ADDPCPlus4.blpin 1);
+\draw[line data] (xPC|-ADDPCPlus4.blpin 2) node[left,signal] {4} node[ocirc] {} -- (ADDPCPlus4.blpin 2);
+\draw[line data] (ADDPCPlus4.brpin 2) -| (xPCPlus4|-yPCPlus4) node[above left,signal] {PCPlus4F} -| (xMUXPCNextin1|-MUXPCNext.blpin 1) -- (MUXPCNext.blpin 1);
+\draw[line data] (xPCPlus4|-yPCPlus4) node[circ] {} -- (FD.west|-yPCPlus4);
+\draw[line data] (xPC|-yPC) node[circ] {} -- (FD.west|-yPC) node[above left,signal] {PCF};
+
+\draw[line control] (REGPC-EN|-Hazard.north) node[above left,signal] {\rotatebox{90}{StallF}} -- (REGPC-EN) node[ocirc,scale=1.5,line data] {};
+
+% ---- Decode ---- %
+\draw[line data] (FD.east|-IMEM-RD) -- node[above,signal] {InstrD} (xInstr|-IMEM-RD);
+\draw[line data] (xInstr|-CU-op) -- (xInstr|-IMMExtend.west);
+\foreach \y/\bmax/\bmin in {CU-op/06/00,CU-funct3/14/12,CU-funct7/31/25,REGFILE-A1/19/15,REGFILE-A2/24/20,IMMExtend.west/31/07}
+{
+    \draw[line data] (xInstr|-\y) node[above right,signal] {\scalebox{0.5}{[\bmax :\bmin]}} -- (\y);
+}
+\draw[line data] (FD.east|-yPCPlus4) -- (DE.west|-yPCPlus4) node[above left,signal] {PCPlus4D};
+\draw[line data] (IMMExtend.east) -- (DE.west|-IMMExtend.east) node[above left,signal] {ImmExtD};
+\foreach \y/\bmax/\bmin in {Rs1/19/15,Rs2/24/20,Rd/11/07}
+{
+    \draw[line data] (xInstr|-y\y) node[above right,signal] {\scalebox{0.5}{[\bmax :\bmin]}} -- (DE.west|-y\y) node[above left,signal] {\y D};
+}
+\draw[line data] (xInstr|-yPC) -- (DE.west|-yPC) node[above left,signal] {PCD};
+\draw[line data] (REGFILE-RD1) -- (DE.west|-REGFILE-RD1) node[above left,signal] {Rs1DataD};
+\draw[line data] (REGFILE-RD2) -- (DE.west|-REGFILE-RD2) node[above left,signal] {Rs2DataD};
+\foreach \y in {CU-funct3,CU-funct7,REGFILE-A1,REGFILE-A2,yRs1,yRs2,yRd,yPC}
+{
+    \path (xInstr|-\y) node[circ] {};
+}
+
+\foreach \label/\range/\ispass in
+{
+    RegWrite//1,
+    ResultSrc/[1:0]/1,
+    MemWrite//1,
+    Jump//1,
+    Branch//1,
+    ALUControl/[2:0]/1,
+    ALUSrcB//1,
+    ImmSrc//0%
+}
+{
+    \path (CU-\label) ++(0.5,0) node[above right,yshift=-0.05cm,signal] {\label D\range\vphantom{hp}};
+    \ifthenelse{\equal{\ispass}{1}}{\draw[line control] (CU-\label) -- (DE.west|-CU-\label);}{}
+}
+\draw[line control] (CU-ImmSrc) -| (xImmSrc|-yImmSrc) -| (IMMExtend.north);
+
+\draw[line control] (FD-EN|-Hazard.north) node[above left,signal] {\rotatebox{90}{StallD}} -- (FD-EN) node[ocirc,scale=1.5,line data] {};
+\draw[line control] (FD-CLR|-Hazard.north) node[above right,signal] {\rotatebox{90}{FlushD}} -- (FD-CLR);
+
+\draw[line data] (xRs1D|-Hazard.north) node[above left,signal] {\rotatebox{90}{Rs1D}} -- (xRs1D|-yRs1) node[circ] {};
+\draw[line data] (xRs2D|-Hazard.north) node[above left,signal] {\rotatebox{90}{Rs2D}} -- (xRs2D|-yRs2) node[circ] {};
+
+% ---- Excute ---- %
+
+\draw[line data] (DE.east|-REGFILE-RD1) node[above right,signal] {Rs1DataE} -- (MUXRs1Data.blpin 1);
+\draw[line data] (DE.east|-REGFILE-RD2) node[above right,signal] {Rs2DataE} -| (xRs2Data|-MUXRs2Data.blpin 1) -- (MUXRs2Data.blpin 1); 
+\draw[line data] (DE.east|-yPC) node[above right,signal] {PCE} -| (xPCE|-ADDPCTarget.blpin 1) -- (ADDPCTarget.blpin 1);
+\draw[line data] (DE.east|-IMMExtend.east) -| (xImmExtE|-ADDPCTarget.blpin 2) -- (ADDPCTarget.blpin 2);
+\draw[line data] (MUXRs1Data.brpin 1) -| (xMUXRs1Dataout|-ALU.blpin 1) -- (ALU.blpin 1) node[above left,signal] {SrcAE};
+\draw[line data] (MUXRs2Data.brpin 1) -- (EM.west|-MUXRs2Data.brpin 1) node[above left,signal] {WriteDataE};
+\draw[line data] (xMUXSrcBin1|-MUXRs2Data.brpin 1) node[circ] {} |- (MUXSrcB.blpin 1);
+\draw[line data] (xMUXSrcBin2|-ADDPCTarget.blpin 2) node[circ] {} node[above left,signal] {ImmExtE} |- (MUXSrcB.blpin 2);
+\draw[line data] (MUXSrcB.brpin 1) -- (ALU.blpin 2) node[above left,signal] {SrcBE};
+\draw[line data] (ADDPCTarget.brpin 2) -| (xPCTarget|-yPCTarget) node[above left,signal] {PCTargetE} -| (xMUXPCNextin2|-MUXPCNext.blpin 2) -- (MUXPCNext.blpin 2); 
+\draw[line data] (ALU.brpin 2) -- (EM.west|-ALU.brpin 2) node[above left,signal] {ALUResultE};
+\draw[line data] (DE.east|-yRd) node[above right,signal] {RdE} -| (xRdE|-Hazard.north) node[above left,signal] {\rotatebox{90}{RdE}};
+\draw[line data] (xRdE|-yRd) node[circ] {} -- (EM.west|-yRd) node[above left] {RdE};
+\draw[line data] (DE.east|-yRs1) node[above right,signal] {Rs1E} -| (xRs1E|-Hazard.north) node[above left,signal] {\rotatebox{90}{Rs1E}};
+\draw[line data] (DE.east|-yRs2) node[above right,signal] {Rs2E} -| (xRs2E|-Hazard.north) node[above left,signal] {\rotatebox{90}{Rs2E}};
+\draw[line data] (DE.east|-yPCPlus4) -- (EM.west|-yPCPlus4) node[above left,signal] {PCPlus4E};
+
+\draw[line control] (DE-CLR) -- (DE-CLR|-Hazard.north) node[above left] {\rotatebox{90}{FlushE}};
+
+\draw[line control] (MUXRs1Data.south) -- (MUXRs1Data.south|-Hazard.north) node[above left,signal] {\rotatebox{90}{ForwardAE}};
+\draw[line control] (MUXRs2Data.south) -- (MUXRs2Data.south|-Hazard.north) node[above left,signal] {\rotatebox{90}{ForwardBE}};
+
+\foreach \label/\range/\ispass in
+{
+    RegWrite//1,
+    ResultSrc/[1:0]/1,
+    MemWrite//1,
+    Jump//0,
+    Branch//0,
+    ALUControl/[2:0]/0,
+    ALUSrcB//0%
+}
+{
+    \path (DE.east|-CU-\label) node[above right,yshift=-0.05cm,signal] {\label E\range\vphantom{hp}};
+    \ifthenelse{\equal{\ispass}{1}}{\draw[line control] (DE.east|-CU-\label) -- (EM.west|-CU-\label);}{}
+}
+
+\draw[line control] (DE.east|-CU-Jump) -| (xORin2|-ORPCSrc.in 2) -- (ORPCSrc.in 2);
+\draw[line control] (DE.east|-CU-Branch) -| (xANDin2|-ANDPCSrc.in 2) -- (ANDPCSrc.in 2);
+\draw[line control] (ANDPCSrc.out) -- (ORPCSrc.in 1);
+\draw[line control] (ALU.brpin 1) -| (xZero|-ANDPCSrc.in 1) node[below left,signal] {ZeroE} -- (ANDPCSrc.in 1);
+\draw[line control] (DE.east|-CU-ALUControl) -| (ALU.north);
+\draw[line control] (DE.east|-CU-ALUSrcB) -| (MUXSrcB.north);
+\draw[line control] (ORPCSrc.out) node[above left,signal] {PCSrcE} -| (MUXPCNext.north);
+\draw[line control] (xORout|-ORPCSrc.out) |- (xPCSrcE|-CU-ImmSrc) -- (xPCSrcE|-Hazard.north) node[above left,signal] {\rotatebox{90}{PCSrc}};
+
+% ---- Memory ---- %
+
+\draw[line data] (EM.east|-DMEM-A) node[above right,signal] {ALUResultM} -- (DMEM-A);
+\draw[line data] (EM.east|-DMEM-WD) node[above right,signal] {WriteDataM} -- (DMEM-WD);
+\draw[line data] (EM.east|-yRd) node[above right,signal] {RdM} -- (MW.west|-yRd);
+\draw[line data] (EM.east|-yPCPlus4) node[above right,signal] {PCPlus4M} -- (MW.west|-yPCPlus4);
+\draw[line data] (xALUResult|-DMEM-A) |- (MW.west|-yALUResult) node[above left,signal] {ALUResultM};
+\draw[line data] (xALUResult|-DMEM-A) node[circ] {} -- (xALUResult|-yALUResultWB) node[above left] {ALUResultM} -- (xFromMEM|-yALUResultWB) |- (MUXRs1Data.blpin 3);
+\draw[line data] (xFromMEM|-MUXRs2Data.blpin 3) node[circ] {} -- (MUXRs2Data.blpin 3);
+\draw[line data] (DMEM-RD) -- (MW.west|-DMEM-RD) node[above left,signal] {ReadDataM};
+
+\foreach \label/\range/\ispass in
+{
+    RegWrite//1,
+    ResultSrc/[1:0]/1,
+    MemWrite//0%
+}
+{
+    \path (EM.east|-CU-\label) node[above right,yshift=-0.05cm,signal] {\label M\range\vphantom{hp}};
+    \ifthenelse{\equal{\ispass}{1}}{\draw[line control] (EM.east|-CU-\label) -- (MW.west|-CU-\label);}{}
+}
+
+\draw[line control] (EM.east|-CU-MemWrite) -| (DMEM-WE);
+\draw[line control] (xRegWriteM|-CU-RegWrite) node[circ] {} -- (xRegWriteM|-Hazard.north) node[above left] {\rotatebox{90}{RegWriteM}};
+\draw[line data] (xRdM|-yRd) node[circ] {} -- (xRdM|-Hazard.north) node[above left,signal] {\rotatebox{90}{RdM}};
+
+% ---- WriteBack ---- %
+\draw[line data] (MW.east|-MUXResult.blpin 2) node[above right,signal] {ReadDataW} -- (MUXResult.blpin 2);
+\draw[line data] (MW.east|-yALUResult) node[above right,signal] {ALUResultW} -| (xMUXResultin|-MUXResult.blpin 1) -- (MUXResult.blpin 1);
+\draw[line data] (MW.east|-yPCPlus4) -- (xMUXResultin|-yPCPlus4) node[below,signal] {PCPlus4W} |- (MUXResult.blpin 3);
+
+\draw[line data] (MW.east|-yRd) node[above right] {RdW} -| (xRdW|-Hazard.north) node[above left,signal] {\rotatebox{90}{RdW}};
+\draw[line data] (xRdW|-yRdW) node[circ] {} -| (xREGFILERdW|-REGFILE-A3) -- (REGFILE-A3);
+\draw[line data] (MUXResult.brpin 1) -| (xResult|-yResult) node[above left,signal] {ResultW} -| (xREGFILEResult|-REGFILE-WD3) -- (REGFILE-WD3);
+\draw[line data] (xFromWB|-yResult) node[circ] {} |- (MUXRs1Data.blpin 2);
+\draw[line data] (xFromWB|-MUXRs2Data.blpin 2) node[circ] {} -- (MUXRs2Data.blpin 2);
+
+\foreach \label/\range/\ispass in
+{
+    RegWrite//0,
+    ResultSrc/[1:0]/0%
+}
+{
+    \path (MW.east|-CU-\label) node[above right,yshift=-0.05cm,signal] {\label W\range\vphantom{hp}};
+}
+
+\draw[line control] (MW.east|-CU-ResultSrc) -| (MUXResult.north);
+\draw[line control] (MW.east|-CU-RegWrite) -| (xRegWriteW|-yRegWrite) -| (REGFILE-WE);
+\draw[line control] (xRegWriteW|-CU-RegWrite) node[circ] {} -- (xRegWriteW|-Hazard.north) node[above left,signal] {\rotatebox{90}{RegWriteW}};
+
+% ---- Stage ---- %
+\foreach \x in{Hazard.west,FD,DE,EM,MW,Hazard.east}
+{
+    \draw[ultra thick] (\x|-yStageA) -- (\x|-yStageB);
+}
+
+\foreach \xa/\xb/\texta/\textb/\mark in
+{
+    Hazard.west/FD/IF Stage/Fetch/F,
+    FD/DE/ID Stage/Decode/D,
+    DE/EM/EX Stage/Excute/E,
+    EM/MW/MEM Stage/Memory/M,
+    MW/Hazard.east/WB Stage/Write Back/W%
+}
+{
+    \draw[ultra thick,latex-latex] (\xa|-yStage) -- node[above,font=\rmfamily\bfseries\LARGE] {\texta} node[below,font=\rmfamily\large] {\textb~(\mark)} (\xb|-yStage);
+}
+
+% ---- Border ---- %
+\draw[ultra thin] (xL|-yB) rectangle (xR|-yA);
+
 
 \end{tikzpicture}
 \end{document}
