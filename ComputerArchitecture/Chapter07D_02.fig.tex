@@ -50,6 +50,14 @@
 \apdM(3){6}{3}[s3][s3][]
 \apdW(3){7}{3}[s3]<apd fill write half>
 
+\draw[red,thick,-latex] (0-M-i.south) to[out=-90,in=130] node[pos=0.6,right,font=\footnotesize] {(MEM)} node[pos=0.9,right] {Forwarding} (1-E-i1.north);
+
+\draw[red,thick,-latex] (0-W-i.south) to[out=-90,in=120] node[pos=0.84,right,font=\footnotesize] {(WB)} node[pos=0.95,right] {Forwarding} (2-E-i1.north);
+
+\draw[red,thick,-latex,dashed] (0-W.south) to[out=-90,in=100] (1-M-o2.north east) to[out=-80,in=80] (2-E-o.south east) to[out=-100,in=90] (3-D.north);
+
+% (3-D.north);
+
 \draw[ultra thin] (-1.3*\apdxunit,4.1*\apdyunit) rectangle (9.2*\apdxunit,-2.1*\apdyunit);
 
 \end{tikzpicture}

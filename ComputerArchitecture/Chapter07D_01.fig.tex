@@ -173,22 +173,20 @@
 \path (Hazard.south) ++ (0,-1) coordinate (yB);
 
 % ---- Clock Mark ---- %
-\foreach \block/\x in
+\foreach \block/\x/\isbar in
 {
-    REGPC/0.5,
-    REGFILE/0.33,
-    DMEM/0.33,
-    FD/0.5,
-    DE/0.5,
-    EM/0.5,
-    MW/0.5%
+    REGPC/0.5/0,
+    REGFILE/0.33/1,
+    DMEM/0.33/0,
+    FD/0.5/0,
+    DE/0.5/0,
+    EM/0.5/0,
+    MW/0.5/0%
 }
 {
     \path ($(\block.north west)!\x!(\block.north east)$) node[clk] (\block -CLK) {};
-    \draw[line control] (\block -CLK) -- ++(0,0.5) node[ocirc] {} node[above] {CLK};
+    \draw[line control] (\block -CLK) -- ++(0,0.5) node[ocirc] {} node[above] {\ifthenelse{\equal{\isbar}{1}}{\ctikztextnot{CLK}}{CLK}};
 }
-
-\path (REGFILE-CLK.north) node[ocirc,scale=1.5,line data] {};
 
 % ---- WE Mark ---- %
 \foreach \block/\x in
@@ -333,8 +331,8 @@
 
 \draw[line control] (DE-CLR) -- (DE-CLR|-Hazard.north) node[above left] {\rotatebox{90}{FlushE}};
 
-\draw[line control] (MUXRs1Data.south) -- (MUXRs1Data.south|-Hazard.north) node[above left,signal] {\rotatebox{90}{ForwardAE}};
-\draw[line control] (MUXRs2Data.south) -- (MUXRs2Data.south|-Hazard.north) node[above left,signal] {\rotatebox{90}{ForwardBE}};
+\draw[line control] (MUXRs1Data.bbpin 1) -- (MUXRs1Data.bbpin 1|-Hazard.north) node[above left,signal] {\rotatebox{90}{ForwardAE}};
+\draw[line control] (MUXRs2Data.bbpin 1) -- (MUXRs2Data.bbpin 1|-Hazard.north) node[above left,signal] {\rotatebox{90}{ForwardBE}};
 
 \foreach \label/\range/\ispass in
 {
@@ -355,9 +353,9 @@
 \draw[line control] (DE.east|-CU-Branch) -| (xANDin2|-ANDPCSrc.in 2) -- (ANDPCSrc.in 2);
 \draw[line control] (ANDPCSrc.out) -- (ORPCSrc.in 1);
 \draw[line control] (ALU.brpin 1) -| (xZero|-ANDPCSrc.in 1) node[below left,signal] {ZeroE} -- (ANDPCSrc.in 1);
-\draw[line control] (DE.east|-CU-ALUControl) -| (ALU.north);
-\draw[line control] (DE.east|-CU-ALUSrcB) -| (MUXSrcB.north);
-\draw[line control] (ORPCSrc.out) node[above left,signal] {PCSrcE} -| (MUXPCNext.north);
+\draw[line control] (DE.east|-CU-ALUControl) -| (ALU.btpin 1);
+\draw[line control] (DE.east|-CU-ALUSrcB) -| (MUXSrcB.btpin 1);
+\draw[line control] (ORPCSrc.out) node[above left,signal] {PCSrcE} -| (MUXPCNext.btpin 1);
 \draw[line control] (xORout|-ORPCSrc.out) |- (xPCSrcE|-CU-ImmSrc) -- (xPCSrcE|-Hazard.north) node[above left,signal] {\rotatebox{90}{PCSrc}};
 
 % ---- Memory ---- %
@@ -406,7 +404,7 @@
     \path (MW.east|-CU-\label) node[above right,yshift=-0.05cm,signal] {\label W\range\vphantom{hp}};
 }
 
-\draw[line control] (MW.east|-CU-ResultSrc) -| (MUXResult.north);
+\draw[line control] (MW.east|-CU-ResultSrc) -| (MUXResult.btpin 1);
 \draw[line control] (MW.east|-CU-RegWrite) -| (xRegWriteW|-yRegWrite) -| (REGFILE-WE);
 \draw[line control] (xRegWriteW|-CU-RegWrite) node[circ] {} -- (xRegWriteW|-Hazard.north) node[above left,signal] {\rotatebox{90}{RegWriteW}};
 
@@ -422,7 +420,7 @@
     FD/DE/ID Stage/Decode/D,
     DE/EM/EX Stage/Excute/E,
     EM/MW/MEM Stage/Memory/M,
-    MW/Hazard.east/WB Stage/Write Back/W%
+    MW/Hazard.east/WB Stage/Writeback/W%
 }
 {
     \draw[ultra thick,latex-latex] (\xa|-yStage) -- node[above,font=\rmfamily\bfseries\LARGE] {\texta} node[below,font=\rmfamily\large] {\textb~(\mark)} (\xb|-yStage);
