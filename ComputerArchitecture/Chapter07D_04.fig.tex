@@ -1,0 +1,73 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}
+
+\foreach \x in {0,1,...,9}
+{
+    \draw[gray,dotted] (\x*\apdxunit,-2*\apdyunit) -- (\x*\apdxunit,6.0*\apdyunit);
+}
+
+\foreach \x in {0,1,...,8}
+{
+    \apdClk(T\x){\x}{-1}
+}
+
+\foreach \y/\addr/\label/\instr in 
+{
+    0/00//{lw \ s0,4(t5)},
+    1/04//{sub s1,s0,t1},
+    3/08//{or \ s2,s0,t2},
+    5/0B//{and s3,s0,t3}    
+}
+{
+    \path (-1*\apdxunit,\y*\apdyunit) coordinate (Instr\y);
+    \path (Instr\y) node[right,font=\ttfamily\large] {\instr\vphantom{hp}} ++(0,-0.25) node[below right,font=\ttfamily] {(0x\addr)};
+    \ifthenelse{\equal{\label}{}}{}{\path (Instr\y) node[left,font=\ttfamily\large] {\label :\vphantom{hp}};}
+}
+
+\apdF(0){0}{0}[0x00][lw]<apd fill read>
+\apdD(0){1}{0}[lw][t5][4]<apd fill read half>
+\apdE(0){2}{0}[+][t5][4][4(t5)]<apd fill excute>
+\apdM(0){3}{0}[4(t5)][][s0]<apd fill read>
+\apdW(0){4}{0}[s0]<apd fill write half>
+
+\apdF(1-St){1}{1}[0x04][sub]<apd fill read>
+\apdD(1-St){2}{1}[sub][s0][t1]<apd fill read half>
+\apdReg(1-St-E){3}{1}[D/E]
+\apdD(1){3}{2}[sub][s0][t1]<apd fill read half>
+\apdE(1){4}{2}[-][s0][t1][s1]<apd fill excute>
+\apdM(1){5}{2}[s1][s1][]
+\apdW(1){6}{2}[s1]<apd fill write half>
+
+\apdF(2-St){2}{3}[0x08][or]<apd fill read>
+\apdReg(2-St-D){3}{3}[F/D]
+\apdF(2){3}{4}[0x08][or]<apd fill read>
+\apdD(2){4}{4}[or][s0][t2]<apd fill read half>
+\apdE(2){5}{4}[|][s0][t2][s2]<apd fill excute>
+\apdM(2){6}{4}[s2][s2][]
+\apdW(2){7}{4}[s2]<apd fill write half>
+
+\apdF(3){4}{5}[0x0B][and]<apd fill read>
+\apdD(3){5}{5}[and][s0][t3]<apd fill read half>
+\apdE(3){6}{5}[\&][s0][t3][s3]<apd fill excute>
+\apdM(3){7}{5}[s3][s3][]
+\apdW(3){8}{5}[s3]<apd fill write half>
+
+
+\draw[red,thick,-latex] (0-W-i.south) to[out=-90,in=120] node[pos=0.84,right,font=\footnotesize] {(WB)} node[pos=0.95,right] {Forwarding} (1-E-i1.north);
+
+\draw[red,thick,-latex,dashed] (0-W.south) to[out=-90,in=100] (1-E-o.north east) to[out=-80,in=90] (2-D.north);
+
+\draw[blue,thick,-latex] (1-St-D-Reg.south) to[out=-90,in=180] node[above,pos=0.8,font=\footnotesize] {(ID)} node[below,pos=0.8] {Stall} (1-D-Reg.west);
+
+\draw[blue,thick,-latex] (2-St-F-Reg.south) to[out=-90,in=180] node[above,pos=0.8,font=\footnotesize] {(IF)} node[below,pos=0.8] {Stall} (2-F-Reg.west);
+
+\draw[blue,thick,dashed,-latex] (2-St-D-Reg.north) -- (1-D-Reg.south);
+
+\draw[blue,thick,-latex] (1-St-E-Reg.east) -- node[above,pos=0.9] {Flush} node[below,pos=0.9,font=\footnotesize] {(EX)} (1-W-Reg|-1-St-E-Reg.east);
+
+\draw[ultra thin] (-1.3*\apdxunit,6.1*\apdyunit) rectangle (9.2*\apdxunit,-2.1*\apdyunit);
+
+\end{tikzpicture}
+\end{document}

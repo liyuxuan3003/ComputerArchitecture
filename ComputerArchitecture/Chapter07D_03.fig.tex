@@ -15,10 +15,10 @@
 
 \foreach \y/\addr/\label/\instr in 
 {
-    0/00//{add s0,t5,t6},
+    0/00//{lw \ s0,4(t5)},
     1/04//{sub s1,s0,t1},
     2/08//{or \ s2,s0,t2},
-    3/0B//{and s3,s0,t3}   
+    3/0B//{and s3,s0,t3}    
 }
 {
     \path (-1*\apdxunit,\y*\apdyunit) coordinate (Instr\y);
@@ -26,10 +26,10 @@
     \ifthenelse{\equal{\label}{}}{}{\path (Instr\y) node[left,font=\ttfamily\large] {\label :\vphantom{hp}};}
 }
 
-\apdF(0){0}{0}[0x00][add]<apd fill read>
-\apdD(0){1}{0}[add][t5][t6]<apd fill read half>
-\apdE(0){2}{0}[+][t5][t6][s0]<apd fill excute>
-\apdM(0){3}{0}[s0][s0][]
+\apdF(0){0}{0}[0x00][lw]<apd fill read>
+\apdD(0){1}{0}[lw][t5][4]<apd fill read half>
+\apdE(0){2}{0}[+][t5][4][4(t5)]<apd fill excute>
+\apdM(0){3}{0}[4(t5)][][s0]<apd fill read>
 \apdW(0){4}{0}[s0]<apd fill write half>
 
 \apdF(1){1}{1}[0x04][sub]<apd fill read>
@@ -50,7 +50,7 @@
 \apdM(3){6}{3}[s3][s3][]
 \apdW(3){7}{3}[s3]<apd fill write half>
 
-\draw[red,thick,-latex] (0-M-i.south) to[out=-90,in=130] node[pos=0.6,right,font=\footnotesize] {(MEM)} node[pos=0.9,right] {Forward} (1-E-i1.north);
+\draw[red,thick,-latex] (0-M-o1.south) to[out=-90,in=70] node[pos=0.9,right=0.2cm] {Trouble!} (1-E-i1.north);
 
 \draw[red,thick,-latex] (0-W-i.south) to[out=-90,in=120] node[pos=0.84,right,font=\footnotesize] {(WB)} node[pos=0.95,right] {Forward} (2-E-i1.north);
 

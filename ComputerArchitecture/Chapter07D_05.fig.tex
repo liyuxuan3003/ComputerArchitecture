@@ -1,0 +1,59 @@
+\documentclass{xStandalone}
+
+\begin{document}
+\begin{tikzpicture}
+
+\foreach \x in {0,1,...,9}
+{
+    \draw[gray,dotted] (\x*\apdxunit,-2*\apdyunit) -- (\x*\apdxunit,5.0*\apdyunit);
+}
+
+\foreach \x in {0,1,...,8}
+{
+    \apdClk(T\x){\x}{-1}
+}
+
+\foreach \y/\addr/\label/\instr in 
+{
+    0/00//{beq t5,t6,l1},
+    1/04//{sub s1,s0,t1},
+    2/08//{or \ s2,s0,t2},
+    3///{...},
+    4/2B/l1/{and s3,s0,t3}    
+}
+{
+    \path (-1*\apdxunit,\y*\apdyunit) coordinate (Instr\y);
+    \path (Instr\y) node[right,font=\ttfamily\large] {\instr\vphantom{hp}};
+    \ifthenelse{\equal{\addr}{}}{}{\path (Instr\y) ++(0,-0.25) node[below right,font=\ttfamily] {(0x\addr)};}
+    \ifthenelse{\equal{\label}{}}{}{\path (Instr\y) node[left,font=\ttfamily\large] {\label :\vphantom{hp}};}
+}
+
+\apdF(0){0}{0}[0x00][beq]<apd fill read>
+\apdD(0){1}{0}[beq][t5][t6]<apd fill read half>
+\apdE(0){2}{0}[-][t5][t6][=]<apd fill excute>
+\apdM(0){3}{0}[][][]
+\apdW(0){4}{0}[]
+
+\apdF(1-St){1}{1}[0x04][sub]<apd fill read>
+\apdD(1-St){2}{1}[sub][s0][t1]<apd fill read half>
+\apdReg(1-St-E){3}{1}[D/E]
+
+\apdF(2-St){2}{2}[0x08][or]<apd fill read>
+\apdReg(2-St-D){3}{2}[F/D]
+
+\apdF(3){3}{4}[0x2B][and]<apd fill read>
+\apdD(3){4}{4}[and][s0][t3]<apd fill read half>
+\apdE(3){5}{4}[\&][s0][t3][s3]<apd fill excute>
+\apdM(3){6}{4}[s3][s3][]
+\apdW(3){7}{4}[s3]<apd fill write half>
+
+\draw[red,thick,-latex] (0-E-o.south) to[out=-105,in=180] node[pos=0.85,below=0.25cm] {Branch} (3-F-Reg.west);
+
+\draw[blue,thick,-latex] (1-St-E-Reg.east) -- node[above,pos=0.9] {Flush} node[below,pos=0.9,font=\footnotesize] {(EX)} (3-M-Reg|-1-St-E-Reg.east);
+
+\draw[blue,thick,-latex] (2-St-D-Reg.east) -- node[above,pos=0.9] {Flush} node[below,pos=0.9,font=\footnotesize] {(ID)} (3-W-Reg|-2-St-D-Reg.east);
+
+\draw[ultra thin] (-1.3*\apdxunit,5.1*\apdyunit) rectangle (9.2*\apdxunit,-2.1*\apdyunit);
+
+\end{tikzpicture}
+\end{document}
