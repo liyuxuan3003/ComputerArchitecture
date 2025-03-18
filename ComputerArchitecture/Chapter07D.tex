@@ -35,8 +35,81 @@
 
 通过仔细观察，我们可以发现这里的数据冒险并不是因为结果没有被及时计算出来，只不过还没来得及写回寄存器。前递的思路是，通过额外路径，将刚刚计算出的“热乎”结果送到马上需要的位置。第二条和第三条指令在ID阶段从寄存器堆读取的\codex{s0} 都是错误的，然而，至第二条和第三条指令真正用到\codex{s0} 的EX阶段所在的周期T3和T4下时，正确的\codex{s0} 已经存在于第一条指令的MEM阶段和WB阶段。因此，只要能将\codex{s0} 跨阶段前递就能解决冒险。
 
-在\xref{fig:流水线RISC-V处理器}中，
+在\xref{fig:流水线RISC-V处理器}中，注意到EX阶段原先\codex{rs1,rs2} 的位置添加了两个三通道的MUX，其中\codex{00} 连接的是从寄存器读出的当前指令的\codex{rs1,rs2} 的值\codex{Rs1DataE,Rs2DataE}，而\codex{01} 和\codex{00} 则分别是来自WB阶段和MEM阶段的前序指令的\codex{rd} 值，在当前指令中，它们可能被作为\codex{rs1,rs2} 使用。这里也关注到，Hazard Unit仅仅处理冒险相关的控制信号，而数据本身的传递并不经过它。这两个MUX的控制信号是\codex{ForwardAE,ForwardBE}，Hazard Unit通过输入的\codex{Rs1E,Rs2E} 和\codex{RdM} 及\codex{RdW} 比较，以判断两者是否要发生前递，并确定前递是来自MEM还是WB阶段。
 
 \begin{Figure}[流水线前递]
     \includegraphics[width=\linewidth]{build/Chapter07D_02.fig.pdf}
 \end{Figure}
+
+综上，可以用伪代码的形式将\codex{ForwardAE,ForwardBE} 和相关输入的关系表示为
+\begin{Code}[流水线前递的伪代码表示]{Verilog}
+    code/Chapter07D_01.cod.v
+\end{Code}
+
+有两点需要解释。第一点是为何需要判断\codex{RegWriteM} 和\codex{RegWriteW}？这是因为并非所有指令都有\codex{rd} 的字段，有些指令\codex{rd} 的位置是被立即数\codex{imm} 占用，我们必须确保判断\codex{Rs1E,Rs2E} 和\codex{RdM,RdW} 是否相等时\codex{RdM,RdW} 代表的是真正的\codex{rd} 而不是恰好碰上\codex{imm} 的部分字段，导致错误的前递。第二点是为何要判断\codex{Rs1E,Rs2E} 不为零。这是因为地址为\codex{00000} 的寄存器是零寄存器\codex{zero}，它常用于丢弃不需要的结果或作为恒定值\codex{0} 使用。然而，零寄存器不会造成数据冒险，不管写入什么数据，零寄存器读取到的始终是\codex{0}，故这种情况没有必要前递。
+
+有一个问题是，为什么流水线前递只能解决ALU计算的数据冒险而不能解决DMEM读取的数据冒险？如\xref{fig:流水线前递无法用于DMEM读取导致的数据冒险}所示，第一条指令中\codex{s0} 的来源由\codex{add} 变为了\codex{lw}。不同于\codex{add} 中MEM阶段只是原封不动的将EX阶段的计算结果向下传递，\code{lw} 中MEM阶段拿到的只是\codex{s0} 的地址\codex{4(t5)}，\code{lw} 要直到WB阶段才有读取到的\codex{s0} 的值，这就导致紧随的指令无法前递，因为此时需要前递的结果确实没有产生。当然，我们会说，在T3周期不是明明已经有\codex{s0} 存在了吗，为什么不能前递？在这类图中，黑色字体表示从寄存器读出的数据，灰色字体表示经过该阶段处理之后的信号，如果将后者前递，意味着最小周期需要满足两个阶段的延时，具体的说，要满足DMEM读取和ALU计算的延时和，这是不合理的，故只有直接读出的数据可以前递。
+ 
+\begin{Figure}[流水线前递无法用于DMEM读取导致的数据冒险]
+    \includegraphics[width=\linewidth]{build/Chapter07D_03.fig.pdf}
+\end{Figure}
+
+\subsection{流水线停滞}
+流水线停滞（Stall）的引入可以解决DMEM读取结果导致的数据冒险，如\xref{fig:流水线停滞}所示。简而言之，我们已经论证了DMEM读取的数据绝无可能在下一周期被使用，因此，当发生DMEM读取且下一条指令需要读取的数据时，我们必须要将流水线停滞一个周期。流水线停滞本质是对寄存器的干预，若在当前指令的EX阶段确认这是一条\codex{lw} 指令，且下一指令的\codex{rs1,rs2} 中有一个命中了当前指令的\codex{rd}，那就需要进行停滞。这包含两个部分：第一是停滞\codex{PC} 寄存器和\codex{F/D} 寄存器，使这两个寄存器在当前周期结束时不要更新，从而将\codex{lw} 后两条指令在原位停留一个周期。第二是冲刷\codex{D/E} 寄存器，使这个寄存器中存储的内容更换为一条\codex{nop} 之类的无效指令，从而避免\codex{lw} 后一条指令已经写入\codex{D/E} 寄存器的状态继续传播，造成额外的影响。
+\begin{Figure}[流水线停滞]
+    \includegraphics[width=\linewidth]{build/Chapter07D_04.fig.pdf}
+\end{Figure}
+
+这三者的控制信号分别是\codex{StallF,StallD,FlushD}。在\xref{fig:流水线RISC-V处理器}中关注到\codex{StallF,StallD} 是添加反相之后连接到\codex{PC} 寄存器和\codex{F/D} 寄存器的\codex{EN} 端，这是因为“停滞”意味着“不使能”。
+
+综上，可以用伪代码的形式将\codex{StallF,StallD,FlushD} 和相关输入的关系表示为
+\begin{Code}[流水线停滞的伪代码表示]{Verilog}
+    code/Chapter07D_02.cod.v
+\end{Code}
+其中，\code{ResultSrcE==01} 代表当前指令确实是\codex{lw} 指令，因为这意味着产生\codex{Result} 的MUX的输入源是\codex{ReadData}。\code{(Rs1D==RdE)|(Rs2D==RdE)} 代表\codex{lw} 指令的后一指令的两个输入中有一个用到了\codex{lw} 的\codex{rd}。值的注意的是，这里并没有判断\codex{rd} 是否为零寄存器以及\codex{rs2} 并不是立即数的一部分，这有多方面的原因。首先，停滞和前递不同，错误的前递会导致不可接受的错误结果，错误的停滞只会浪费一个周期。其次，对于第一种情况，将数据读取到零寄存器并没有什么价值，不要编写这样的程序，对于第二种情况，立即数在\codex{rs2} 范围内的值代表的地址恰好碰上了上一条指令\codex{rd} 的地址的情况是罕见的，即便遇到，浪费一个周期也不要紧。
+
+\subsection{流水线冲刷}
+流水线冲刷（Flush）的引入可以解决控制冒险，如\xref{fig:流水线冲刷}所示。它的思路很简单，即便遇到涉及跳转的指令，也先顺序执行，这样若遇到\codex{beq} 但没有分支的情况，那就什么都不用做。而若遇到\codex{beq} 需要分支或是\codex{jal} 无条件跳转的情况，跳转决定和跳转地址会在EX阶段作出，那要做的就是将这期间错误顺序执行的两条指令冲刷掉即可，涉及\codex{F/D} 寄存器和\codex{D/E} 寄存器。
+\begin{Figure}[流水线冲刷]
+    \includegraphics[width=\linewidth]{build/Chapter07D_05.fig.pdf}
+\end{Figure}
+在EX阶段表征需要跳转的信号是\codex{PCSrcE}，因此就有
+\begin{Code}[流水线冲刷的伪代码表示]{Verilog}
+    code/Chapter07D_03.cod.v
+\end{Code}
+
+由于\codex{FlushE} 同时被停滞和冲刷两种机制使用，故其最终表达式应为两者的或。
+
+\subsection{流水线处理器的性能分析}
+流水线处理器每个阶段的耗时如下，需要说明的有两点：第一点是由于寄存器堆使用反相时钟，前半周期供WB阶段写，后半周期供ID阶段读，两者需要平分一个周期，因此这两个阶段所需的最小周期是其耗时的两倍，这也是为何ID阶段的耗时并不是以$t_{pcq}$开头。第二点是EX阶段的耗时中为何有$4t_{mux}$项？需要考虑最极端的情况，即需要发生分支跳转，且其第二项输入还是来自WB阶段的前递。这种情况下，首先\codex{ReadDataW} 需要通过WB阶段产生\codex{ResultW} 的MUX才能前递至EX阶段，随后经过\codex{SrcBE} 前的两个MUX进入ALU，而\codex{Zero} 信号还需要经过AND和OR两级逻辑门才能到达IF阶段\codex{PCNextF} 前的MUX的控制端，最后跳转地址\codex{PCTargetE} 本身还需要再通过这个MUX才能最终写入\codex{PC} 寄存器。
+\begin{Gather}
+    T_{c,pipelined,f}=t_{pcq}+t_{mem}+t_{setup}\\
+    T_{c,pipelined,d}=2(t_{rf}+t_{setup})\\
+    T_{c,pipelined,e}=t_{pcq}+4t_{mux}+t_{alu}+t_{and}+t_{or}+t_{setup}\\
+    T_{c,pipelined,m}=t_{pcq}+t_{mem}+t_{setup}\\
+    T_{c,pipelined,w}=2(t_{pcq}+t_{mux}+t_{rf,setup})
+\end{Gather}
+
+根据\xref{tab:参考电路延时}，注意到EX阶段的延时最长，将结果整理如下
+\begin{BoxFormula}[流水线处理器的最小周期]
+    流水线处理器的最小周期是
+    \begin{Equation}
+        T_{c,pipelined}=t_{pcq}+4t_{mux}+t_{alu}+t_{and}+t_{or}+t_{setup}=\SI{350}{ps}
+    \end{Equation}
+\end{BoxFormula}
+
+流水线处理器的$\te{CPI}$理想状态下是$1$，然而，每个读取后立即使用会占用$2$个周期（停滞一个周期），每个跳转会占用$3$个周期（冲刷两条指令），结合\xref{tab:参考指令类型比例}，可以算出实际的$\te{CPI}$为
+\begin{BoxFormula}[流水线处理器的指令平均周期数]
+    流水线处理器的$\te{CPI}$是
+    \begin{Equation}
+        \te{CPI}_{pipelined}=1.25
+    \end{Equation}
+\end{BoxFormula}
+流水线处理器在指令数$n=\SI{1e11}{}$下的程序执行时间$T=n\cdot\te{CPI}\cdot T_{c}$因而为
+\begin{BoxFormula}[流水线处理器的程序执行时间]
+    流水线处理器的程序执行时间是
+    \begin{Equation}
+        T_{pipelined}=\SI{44}{s}
+    \end{Equation}
+\end{BoxFormula}
+若比较\xref{fml:单周期处理器的程序执行时间}和\xref{fml:流水线处理器的程序执行时间}，可以看出，相较于单周期处理器，流水线显著提高了效率！
