@@ -26,17 +26,17 @@ ${OUTPUT}: ${TEXS} ${FIGS_PDF} ${OCTS_PDF} ${WLSS_PDF} ${ASCS_PDF} ${STYS} ${CLS
 	latexmk ${FLAGS} ${PROJECT}.tex
 	touch $@
 
-${BUILD_DIR}/%.fig.pdf:%.fig.tex ${STYS} ${CLSS}
+${BUILD_DIR}/%.fig.pdf: %.fig.tex ${STYS} ${CLSS}
 	latexmk ${FLAGS} $<
 	touch $@
 
-${BUILD_DIR}/%.fig.pdf:%.fig.m
+${BUILD_DIR}/%.fig.pdf: %.fig.m
 	octave-cli $<
 
-${BUILD_DIR}/%.fig.pdf:%.fig.wls
+${BUILD_DIR}/%.fig.pdf: %.fig.wls
 	wolframscript -script $<
 
-${BUILD_DIR}/%.fig.pdf:%.fig.py
+${BUILD_DIR}/%.fig.pdf: %.fig.py
 	python $<
 
 ${BUILD_DIR}:
