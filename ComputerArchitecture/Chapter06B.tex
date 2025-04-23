@@ -149,9 +149,9 @@ S型指令和B型指令的编码结构、编码字段、包含的指令如\xref{
     \mc{2}(l){Branch If Less Than}&\mc{4}(r){若小于（有符号）则跳转}\\ \hlinelig
     bltu rs1,rs2,lab&if(rs1< rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&110&-------\\
     \mc{2}(l){Branch If Less Than Unsigned}&\mc{4}(r){若小于（无符号）则跳转}\\ \hlinelig
-    bge rs1,rs2,lab&if(rs1>=rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&100&-------\\
+    bge rs1,rs2,lab&if(rs1>=rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&101&-------\\
     \mc{2}(l){Branch If Greater Than or Equal}&\mc{4}(r){若大等（有符号）则跳转}\\ \hlinelig
-    bgeu rs1,rs2,lab&if(rs1>=rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&110&-------\\
+    bgeu rs1,rs2,lab&if(rs1>=rs2) pc=pc+SE(\{imm,1'b0\})&B&1100011&111&-------\\
     \mc{2}(l){Branch If Greater Than or Equal Unsigned}&\mc{4}(r){若大等（无符号）则跳转}\\
 \end{Tablex}
 
