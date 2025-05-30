@@ -7,7 +7,7 @@
 \path (0,0)
     ++ (0,0) coordinate (xMW)
     ++ (-8,0) coordinate (xEM)
-    ++ (-14,0) coordinate (xDE)
+    ++ (-15,0) coordinate (xDE)
     ++ (-9,0) coordinate (xFD);
 
 \path (0,0) coordinate (yC);
@@ -94,7 +94,7 @@
 % ---- Excute ---- %
 
 % MUX Rs1Data
-\path (DE.east|-REGFILE-RD1) ++(4.5,0) node[mux31,anchor=blpin 1] (MUXRs1Data) {};
+\path (DE.east|-REGFILE-RD1) ++(5.5,0) node[mux31,anchor=blpin 1] (MUXRs1Data) {};
 
 % MUX Rs2Data
 \path (MUXRs1Data|-DMEM-WD) ++(1,0) node[mux31] (MUXRs2Data) {}; 
@@ -115,7 +115,7 @@
 \path (ORPCSrc.in 1) ++(1,0) node[digital,and port,anchor=out,xscale=-1] (ANDPCSrc) {};
 
 % x
-\path (DE.east) ++(0.5,0) coordinate (xRdE) ++(0.5,0) coordinate (xRs2E) ++(0.5,0) coordinate (xRs1E) ++(0.5,0) coordinate (xPCE) coordinate (xImmExtE) ++(0.5,0) coordinate (xPCSrcE);
+\path (DE.east) ++(0.5,0) coordinate (xRdE) ++(0.5,0) coordinate (xRs2E) ++(0.5,0) coordinate (xRs1E) ++(0.5,0) coordinate (xPCE) coordinate (xImmExtE) ++(0.5,0) coordinate (xPCSrcE) ++(1.0,0) coordinate (xResultSrcE);
 
 \path (MUXRs1Data.west) ++(-0.5,0) coordinate (xFromMEM) ++ (-0.5,0) coordinate (xFromWB) ++ (-0.5,0) coordinate (xRs2Data);
 
@@ -356,7 +356,8 @@
 \draw[line control] (DE.east|-CU-ALUControl) -| (ALU.btpin 1);
 \draw[line control] (DE.east|-CU-ALUSrcB) -| (MUXSrcB.btpin 1);
 \draw[line control] (ORPCSrc.out) node[above left,signal] {PCSrcE} -| (MUXPCNext.btpin 1);
-\draw[line control] (xORout|-ORPCSrc.out) |- (xPCSrcE|-CU-ImmSrc) -- (xPCSrcE|-Hazard.north) node[above left,signal] {\rotatebox{90}{PCSrcE}};
+\draw[line control] (xORout|-ORPCSrc.out) node[circ] {} |- (xPCSrcE|-CU-ImmSrc) -- (xPCSrcE|-Hazard.north) node[above left,signal] {\rotatebox{90}{PCSrcE}};
+\draw[line control] (xResultSrcE|-CU-ResultSrc) node[circ] {} -- (xResultSrcE|-Hazard.north) node[above left,signal] {\rotatebox{90}{ResultSrcE}};
 
 % ---- Memory ---- %
 
