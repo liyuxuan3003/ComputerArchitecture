@@ -356,7 +356,7 @@
 \draw[line control] (DE.east|-CU-ALUControl) -| (ALU.btpin 1);
 \draw[line control] (DE.east|-CU-ALUSrcB) -| (MUXSrcB.btpin 1);
 \draw[line control] (ORPCSrc.out) node[above left,signal] {PCSrcE} -| (MUXPCNext.btpin 1);
-\draw[line control] (xORout|-ORPCSrc.out) |- (xPCSrcE|-CU-ImmSrc) -- (xPCSrcE|-Hazard.north) node[above left,signal] {\rotatebox{90}{PCSrc}};
+\draw[line control] (xORout|-ORPCSrc.out) |- (xPCSrcE|-CU-ImmSrc) -- (xPCSrcE|-Hazard.north) node[above left,signal] {\rotatebox{90}{PCSrcE}};
 
 % ---- Memory ---- %
 
