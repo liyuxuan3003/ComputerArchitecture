@@ -279,10 +279,10 @@
 {
     \draw[line data] (xInstr|-y\y) node[above right,signal] {\scalebox{0.5}{[\bmax :\bmin]}} -- (DE.west|-y\y) node[above left,signal] {\y D};
 }
-\draw[line data] (xInstr|-yPC) -- (DE.west|-yPC) node[above left,signal] {PCD};
+\draw[line data] (FD.east|-yPC) -- (DE.west|-yPC) node[above left,signal] {PCD};
 \draw[line data] (REGFILE-RD1) -- (DE.west|-REGFILE-RD1) node[above left,signal] {Rs1DataD};
 \draw[line data] (REGFILE-RD2) -- (DE.west|-REGFILE-RD2) node[above left,signal] {Rs2DataD};
-\foreach \y in {CU-funct3,CU-funct7,REGFILE-A1,REGFILE-A2,yRs1,yRs2,yRd,yPC}
+\foreach \y in {CU-funct3,CU-funct7,REGFILE-A1,REGFILE-A2,yRs1,yRs2,yRd}
 {
     \path (xInstr|-\y) node[circ] {};
 }
