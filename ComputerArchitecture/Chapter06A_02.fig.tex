@@ -1,4 +1,10 @@
-\documentclass{xStandalone}
+\makeatletter\def\input@path{{minimus}{standalone-silicon}}\makeatother
+
+\documentclass{standalone-silicon}
+
+\usepackage{minimus-text}
+\usepackage{minimus-math}
+\usepackage{minimus-tikz}
 
 \begin{document}
 \begin{tikzpicture}
@@ -40,17 +46,17 @@
 
 \foreach \xa/\xb in {0.00/1.00}
 {
-    \draw[thin,latex-latex] ($(W1)!\xa!(W2)$) -- node[above] {$\SI{32}{bit}$}  ($(W1)!\xb!(W2)$);
+    \draw[thin,latex-latex] ($(W1)!\xa!(W2)$) -- node[above] {$\qnum{32}{bit}$}  ($(W1)!\xb!(W2)$);
 }
 
 \foreach \xa/\xb/\t in {0.00/0.50/2,0.50/1.00/0}
 {
-    \draw[thin,latex-latex] ($(H1)!\xa!(H2)$) -- node[above] {$\SI{16}{bit}$} node[below] {\texttt{+\t}}  ($(H1)!\xb!(H2)$);
+    \draw[thin,latex-latex] ($(H1)!\xa!(H2)$) -- node[above] {$\qnum{16}{bit}$} node[below] {\texttt{+\t}}  ($(H1)!\xb!(H2)$);
 }
 
 \foreach \xa/\xb/\t in {0.00/0.25/3,0.25/0.50/2,0.50/0.75/1,0.75/1.00/0}
 {
-    \draw[thin,latex-latex] ($(B1)!\xa!(B2)$) -- node[above] {$\SI{8}{bit}$} node[below] {\texttt{+\t}} ($(B1)!\xb!(B2)$);
+    \draw[thin,latex-latex] ($(B1)!\xa!(B2)$) -- node[above] {$\qnum{8}{bit}$} node[below] {\texttt{+\t}} ($(B1)!\xb!(B2)$);
 }
 
 \foreach \x/\t in {W1/Word,H1/Half,B1/Byte}

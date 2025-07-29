@@ -7,27 +7,20 @@
     \item 多周期处理器（Multicycle Processor）在若干更短的周期内执行整条指令，简单的指令需要相对更少的周期。除此之外，包括ALU和MEM在内的硬件会在同一指令的不同周期中被复用。得益于更低的硬件开销，在历史上多周期处理器常用于廉价系统中。
     \item 流水线处理器（Pipelined Processor）在单周期处理器上应用了流水线，因而可以同时执行多条指令，显著提高了吞吐量。然而，流水线必须要小心的处理同时执行的指令间的依赖关系造成的潜在冲突。当今，几乎所有的商业高性能处理器都使用了流水线技术。
 \end{itemize}
-简洁起见，我们只会实现RV32I的一个子集，这会包括：R/OP和I/OP-IMM下的几乎全部指令、I/LOAD的\codex{lw}、S/STORE的\codex{sw}、B/BRANCH的\codex{beq}、J/JAL的\codex{jal}。这些指令已经足够支撑基本的程序，在展示RISC-V处理器的核心设计思想的同时，又不会让电路显得过于冗杂。更多的指令在此基础上很容易被添加，例如：\code{lh,lb,lhu,lbu,sh,sb} 等半字或字节读写指令只需要在读写时对数据进行额外处理，\code{bne,blt,bge,bltu,bgeu} 等更多判断只需要完善是否进行跳转的逻辑，\code{auipc} 则需要为ALU的输入增加额外的数据选择器，等等。
+简洁起见，我们只会实现RV32I的一个子集，这会包括：R/OP和I/OP-IMM下的几乎全部指令、I/LOAD的\code{lw}、S/STORE的\code{sw}、B/BRANCH的\code{beq}、J/JAL的\code{jal}。这些指令已经足够支撑基本的程序，在展示RISC-V处理器的核心设计思想的同时，又不会让电路显得过于冗杂。更多的指令在此基础上很容易被添加，例如：\code{lh,lb,lhu,lbu,sh,sb}等半字或字节读写指令只需要在读写时对数据进行额外处理，\code{bne,blt,bge,bltu,bgeu} 等更多判断只需要完善是否进行跳转的逻辑，\code{auipc} 则需要为ALU的输入增加额外的数据选择器，等等。
 
-\xref{fig:RISC-V处理器的状态单元}中展示了处理器涉及的所有状态单元：PC寄存器、REGFILE、IMEM、DMEM。请注意，所有状态单元都是组合读取（Read Combinationally）的！例如对于DMEM，当\codex{A} 处输入的地址改变，经过短暂的传播延时，\code{RD} 处就会产生新数据，该过程并不涉及时钟！而相比之下，\code{WD} 处的数据要在下一个时钟上升沿才会被写入。这并不违背同步时序的设计，同步时序的关键在于电路状态仅在时钟上升沿变化，读取并不改变电路状态，是可以立即完成的。
-
+\cref{fig:RISC-V处理器的状态单元}中展示了处理器涉及的所有状态单元：PC寄存器、REGFILE、IMEM、DMEM。请注意，所有状态单元都是组合读取（Read Combinationally）的！例如对于DMEM，当\code{A}处输入的地址改变，经过短暂的传播延时，\code{RD} 处就会产生新数据，该过程并不涉及时钟！而相比之下，\code{WD} 处的数据要在下一个时钟上升沿才会被写入。这并不违背同步时序的设计，同步时序的关键在于电路状态仅在时钟上升沿变化，读取并不改变电路状态，是可以立即完成的。
 \begin{Figure}[RISC-V处理器的状态单元]
-    \begin{FigureSub}[PC]
-        \includegraphics[scale=0.8]{build/Chapter07A_04.fig.pdf}
-    \end{FigureSub}\hspace{0.5cm}
-    \begin{FigureSub}[REGFILE]
-        \includegraphics[scale=0.8]{build/Chapter07A_03.fig.pdf}
-    \end{FigureSub}\hspace{0.5cm}
-    \begin{FigureSub}[IMEM]
-        \includegraphics[scale=0.8]{build/Chapter07A_01.fig.pdf}
-    \end{FigureSub}\hspace{0.5cm}
-    \begin{FigureSub}[DMEM]
-        \includegraphics[scale=0.8]{build/Chapter07A_02.fig.pdf}
-    \end{FigureSub}
+    \figuresub[PC]{\includegraphics[scale=0.8]{Chapter07A_04.fig.pdf}}
+    \hspace{0.5cm}
+    \figuresub[REGFILE]{\includegraphics[scale=0.8]{Chapter07A_03.fig.pdf}}
+    \hspace{0.5cm}
+    \figuresub[IMEM]{\includegraphics[scale=0.8]{Chapter07A_01.fig.pdf}}
+    \hspace{0.5cm}
+    \figuresub[DMEM]{\includegraphics[scale=0.8]{Chapter07A_02.fig.pdf}}
 \end{Figure}
 
-如何衡量一个处理器的性能？或许会考虑比较处理器的时钟频率的高低。然而，多周期处理器会使用比单周期处理器快$5$倍的时钟，但同时，多周期处理器也需要接近$5$个周期才能执行一条指令。若以执行一条指令的时间来衡量，多周期处理器对于不同指令有不同时间，流水线处理器同时执行多条指令的优点也无法凸显。因此，更好的评价方法是，令处理器运行一段测试程序，并计算运行所需的时间。这种测试程序称为基准测试（Benchmark）。最流行的三种基准测试是Dhrystone、CoreMark、SPECint。Dhrystone和CoreMark是合成基准测试，即测试程序由常用的重要程序片段拼合而来。Dhrystone在1984年被提出，且目前仍常用于嵌入式处理器的测试中。CoreMark是Dhrystone的改进，包括矩阵乘（测试乘法器和加法器）、链表操作（测试存储系统）、状态机（测试分支逻辑）、循环冗余校验等。两者的程序都小于$\SI{16}{KB}$，故不会对指令缓存造成压力。相比之下，SPECint包含了真实的程序，包括x264（视频压缩）、gcc（C编译器）、omnetpp（仿真框架）、deepsejeng（人工智能国际象棋引擎），具有SPECint2000、SPECint2006、SPECint2017等版本，被广泛应用于高性能处理器的测试中。
-
+如何衡量一个处理器的性能？或许会考虑比较处理器的时钟频率的高低。然而，多周期处理器会使用比单周期处理器快$5$倍的时钟，但同时，多周期处理器也需要接近$5$个周期才能执行一条指令。若以执行一条指令的时间来衡量，多周期处理器对于不同指令有不同时间，流水线处理器同时执行多条指令的优点也无法凸显。因此，更好的评价方法是，令处理器运行一段测试程序，并计算运行所需的时间。这种测试程序称为基准测试（Benchmark）。最流行的三种基准测试是Dhrystone、CoreMark、SPECint。Dhrystone和CoreMark是合成基准测试，即测试程序由常用的重要程序片段拼合而来。Dhrystone在1984年被提出，且目前仍常用于嵌入式处理器的测试中。CoreMark是Dhrystone的改进，包括矩阵乘（测试乘法器和加法器）、链表操作（测试存储系统）、状态机（测试分支逻辑）、循环冗余校验等。两者的程序都小于$\qnum{16}{KB}$，故不会对指令缓存造成压力。相比之下，SPECint包含了真实的程序，包括x264（视频压缩）、gcc（C编译器）、omnetpp（仿真框架）、deepsejeng（人工智能国际象棋引擎），具有SPECint2000、SPECint2006、SPECint2017等版本，被广泛应用于高性能处理器的测试中。
 \begin{BoxFormula}[执行时间]
     程序的执行时间$t$可以表示为
     \begin{Equation}
@@ -37,29 +30,31 @@
 
 其中，$n$是指令数量，$T_c$是时钟周期，$\te{CPI}$（Cycles Per Instruction）是平均一条指令所需的周期数。需要指出的是，$\te{CPI}$是一个与具体程序有关的指标。对于单周期处理器，所有指令都是在一个周期中完成，故恒定有$\te{CPI}=1$。对于多周期处理器，由于指令所需的周期数取决于指令的类型，故$\te{CPI}$会取决于程序中各类型的指令数量。对于流水线处理器，由于某些指令执行顺序下会触发流水线停滞和流水线冲刷，故$\te{CPI}$还会取决于程序中指令的顺序关系。
 
-\xref{tab:参考指令类型比例}给出了SPECint2000各指令类型的比例，并假设了LOAD和BRANCH中触发流水线停滞和流水线冲刷的比例。本章计算处理器性能时均参照此数据（指令数量取$n=\SI{1e11}{}$）。
+\cref{tab:参考指令类型比例}给出了SPECint2000各指令类型的比例，并假设了LOAD和BRANCH中触发流水线停滞和流水线冲刷的比例。本章计算处理器性能时均参照此数据（指令数量取$n=\qnum{1e11}{}$）。
+\begin{Table}[参考指令类型比例（SPECint2000）;参考指令类型比例]!!
+    \begin{tblr}{colspec={lX[c]r},cell{2-Z}{3}={mode=math}}
+        类型&备注&比例\\
+        LOAD&（其中$40\%$的读取数据在下一条指令需要使用）&25\%\\
+        STORE&&10\%\\
+        BRANCH&（其中$50\%$会发生分支跳转）&11\%\\
+        JUMP(JAL)&&2\%\\
+        OP/OP-IMM&&52\%\\
+    \end{tblr}
+\end{Table}
 
-\begin{Tablex}[参考指令类型比例（SPECint2000）;参考指令类型比例]{lYr}
-    <类型&备注&比例\\>
-    LOAD&（其中$40\%$的读取数据在下一条指令需要使用）&$25\%$\\
-    STORE&&$10\%$\\
-    BRANCH&（其中$50\%$会发生分支跳转）&$11\%$\\
-    JUMP(JAL)&&$2\%$\\
-    OP/OP-IMM&&$52\%$\\
-\end{Tablex}
-
-\xref{tab:参考电路延时}给出了$\SI{7}{nm}$下的CMOS制程的典型电路延时，相关参数的含义后续会进一步解释。
-
-\begin{Tablex}[参考电路延时（$\SI{7}{nm}$ CMOS制程）;参考电路延时]{Xcr}
-    <类型&符号&延时\\>
-    寄存器传播时间（Register CLK to Q）&$t_{pcq}$&$\SI{40}{ps}$\\
-    寄存器建立时间（Register Setup）&$t_{setup}$&$\SI{50}{ps}$\\
-    与或逻辑门（And/Or Gate）&$t_{and},t_{or}$&$\SI{20}{ps}$\\
-    数据选择器（MUX）&$t_{mux}$&$\SI{30}{ps}$\\
-    算数逻辑单元（ALU）&$t_{alu}$&$\SI{120}{ps}$\\
-    扩展单元（Extend Unit）&$t_{ext}$&$\SI{35}{ps}$\\
-    控制单元（Control Unit）&$t_{dec}$&$\SI{25}{ps}$\\
-    存储器读取（Memory Read）&$t_{mem}$&$\SI{200}{ps}$\\
-    寄存器堆读取（Register File Read）&$t_{rf}$&$\SI{100}{ps}$\\
-    寄存器堆建立时间（Register File Setup）&$t_{rf,setup}$&$\SI{60}{ps}$\\
-\end{Tablex}
+\cref{tab:参考电路延时}给出了$\qnum{7}{nm}$下的CMOS制程的典型电路延时，相关参数的含义后续会进一步解释。
+\begin{Table}[参考电路延时（$\qnum{7}{nm}$ CMOS制程）;参考电路延时]!!
+    \begin{tblr}{colspec={Xcr},cell{2-Z}{2,3}={mode=math}}
+        类型&符号&延时\\
+        寄存器传播时间（Register CLK to Q）&t_{pcq}&\qnum{40}{ps}\\
+        寄存器建立时间（Register Setup）&t_{setup}&\qnum{50}{ps}\\
+        与或逻辑门（And/Or Gate）&t_{and},t_{or}&\qnum{20}{ps}\\
+        数据选择器（MUX）&t_{mux}&\qnum{30}{ps}\\
+        算数逻辑单元（ALU）&t_{alu}&\qnum{120}{ps}\\
+        扩展单元（Extend Unit）&t_{ext}&\qnum{35}{ps}\\
+        控制单元（Control Unit）&t_{dec}&\qnum{25}{ps}\\
+        存储器读取（Memory Read）&t_{mem}&\qnum{200}{ps}\\
+        寄存器堆读取（Register File Read）&t_{rf}&\qnum{100}{ps}\\
+        寄存器堆建立时间（Register File Setup）&t_{rf,setup}&\qnum{60}{ps}\\
+    \end{tblr}
+\end{Table}

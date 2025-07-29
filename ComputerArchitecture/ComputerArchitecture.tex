@@ -1,27 +1,33 @@
+\makeatletter\def\input@path{{minimus}{notebook-neon}}\makeatother
+
+\documentclass{notebook-neon}
+
+\usepackage{minimus-section}
+\usepackage{minimus-text}
+\usepackage{minimus-math}
+\usepackage{minimus-float}
+\usepackage{minimus-code}
+\usepackage{minimus-colorbox}
+\usepackage{minimus-tikz}
+\usepackage{minimus-reference}
+\usepackage{minimus-bibtex}
+
+\graphicspath{{build}{image}}
+\lstset{inputpath={code}}
+
 \title{计算机体系结构}
 \author{李宇轩}
 
-\documentclass{xNoteBook}
-
-\usepackage{xCommon}
-\usepackage{xMath}
-\usepackage{xFloat}
-\usepackage{xTikZ}
-\usepackage{xCode}
-
-\usepackage{Local}
-
 \begin{document}
-
-% \setkeys{Gin}{draft}
 
 \maketitle
 
 \frontmatter
+
 \makesymb
 
 \begin{center}
-    \includegraphics[width=13.5cm]{image/019.jpeg}
+    \includegraphics[width=13.5cm]{019.jpeg}
 \end{center}
 
 \clearpage
@@ -29,8 +35,10 @@
 \tableofcontents
 \listoffigures
 \listoftables
+\lstlistoflistings
 
 \mainmatter
+
 \nocite{*}
 
 \input{Chapter06.tex}
@@ -40,7 +48,6 @@
 
 \backmatter
 
-\bibliographystyle{gbt7714-numerical}
 \bibliography{Reference.bib}
 
 \end{document}
