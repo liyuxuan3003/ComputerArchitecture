@@ -13,7 +13,7 @@
 \end{itemize}
 
 \begin{Figure}[单周期RISC-V处理器]
-    \includegraphics[width=0.47\textwidth]{Chapter07B_01.fig.pdf}
+    \includegraphics[width=\linewidth]{Chapter07B_01.fig.pdf}
 \end{Figure}
 除此之外，在\cref{fig:单周期RISC-V处理器}中。Extend单元是用于将立即数扩展至$\qnum{32}{bit}$。参照\cref{fig:RISC-V指令类型}，每一类指令编码立即数的位置和位数都有一定差异。Control Unit单元则是整个处理器的控制单元，通过对指令\code{op,funct3,funct7}的解码，产生MUX、ALU、REGFILE、DMEM等的控制信号。
 
@@ -59,7 +59,6 @@
 \end{Table}
 
 \cref{tab:ImmSrc的控制编码}展示了Extend是如何在Main Decoder产生的\code{ImmSrc}下工作的。\code{ImmSrc}用两位编码了需要立即数的四种指令类型：I、S、B、J。Extend单元要做的就是根据\cref{fig:RISC-V指令类型}的各类型的立即数编码方式（编码已尽量保证较多的位数重合），正确的扩展出一个$\qnum{32}{bit}$的立即数。
-
 \begin{Table}[ImmSrc的控制编码]!!
     \begin{tblr}
     {
@@ -82,8 +81,6 @@
 \end{itemize}
 
 这里有一个较复杂的细节是，大部分R/OP和I/OP-IMM的指令之间都是通过\code{funct3}就能区分，然而\code{add,sub}的\code{funct3}是相同的，需要借助\code{funct7[5]=0,1}来区分，但更麻烦的事情在于，首先不存在\code{subi}，其次\code{addi}没有\code{funct7}的字段，这一部分被其立即数编码占用了。注意到R/OP和I/OP-IMM的\code{op}分别为\code{0110011}和\code{0010011}，可以通过\code{op[5]=0,1}区分，因此，当\code{op[5]=0}时，无论\code{funct7[5]}是什么（是立即数的某一位），都代表加法。
-
-% {>{\ttfamily}X*{4}{@{\hspace{30pt}}>{\ttfamily}c}r}
 \begin{Table}[ALU Decoder真值表]!!
     \begin{tblr}
     {
@@ -104,13 +101,6 @@
 
 \subsection{单周期处理器的数据通路}
 首先，所有类型的指令共用的数据通路是：当前周期指令的地址\code{pc}从PC寄存器中取出，经过\code{PCPlus4}加法器计算顺序执行的下一条指令地址\code{pc+4}。同时，指令地址\code{pc}经过IMEM读出当前指令内容\code{instr}，描述指令类型的\code{op,funct3,funct7}字段被送至控制单元译码，描述寄存器地址的\code{xrs1,xrs2,xrd}字段被送至寄存器堆的地址端，描述立即数的\code{ximm}字段被送至立即数扩展单元（这里前缀\code{x}用于区分寄存器地址和寄存器值/立即数字段和立即数）。
-
-在LOAD和STORE指令类型中，ALU计算\code{rs1,imm}的加法，该计算结果的意义是DMEM地址\code{imm(rs1)}，送至DMEM的\code{A}端。对于LOAD指令\code{MemWrite=0}，DMEM从\code{RD}端读出数据\code{[imm(rs1)]}并经过MUX传递至REGFILE的\code{WD3}端处，从而将该数据写回至寄存器\code{rd}。对于STORE指令\code{MemWrite=1}，DMEM自\code{WD}端接受写入\code{imm(rs1)}的数据\code{rs2}。
-
-在OP和OP-IMM指令类型中，ALU对\code{rs1,rs2}和\code{rs1,imm}进行指令指定的计算，计算结果在“跳过DMEM”后直接通过MUX写回至\code{rd}。由此可见ALU输出的多重功能，对于写回值，既可能直接来自ALU的计算结果，也可能来自ALU的计算结果代表的地址处的数据。
-
-在BRANCH和JAL指令类型中，\code{PCTarget}加法器计算跳转指令地址\code{pc+imm}，\code{PCPlus4}加法器计算顺序指令地址\code{pc+4}，两者都被送至产生的\code{PCNext}的MUX处，对于BRANCH指令，ALU会计算\code{rs1,rs2}的减法，ALU在正常输出外还会产生一个指示计算结果是否为零的的控制信号\code{Zero}，其被接至Control Unit从而产生选择下一指令地址的\code{PCSrc}。而有所不同的是，对于JAL指令，其总是选择跳转地址，但\code{pc+4}同样不会浪费，其需要写回至\code{rd}。
-
 \begin{Table}[单周期RISC-V处理器的数据通路]!!
     \begin{tblr}
     {
@@ -134,6 +124,12 @@
         B/BRANCH&J/JAL\\
     \end{tblr}
 \end{Table}
+
+在LOAD和STORE指令类型中，ALU计算\code{rs1,imm}的加法，该计算结果的意义是DMEM地址\code{imm(rs1)}，送至DMEM的\code{A}端。对于LOAD指令\code{MemWrite=0}，DMEM从\code{RD}端读出数据\code{[imm(rs1)]}并经过MUX传递至REGFILE的\code{WD3}端处，从而将该数据写回至寄存器\code{rd}。对于STORE指令\code{MemWrite=1}，DMEM自\code{WD}端接受写入\code{imm(rs1)}的数据\code{rs2}。
+
+在OP和OP-IMM指令类型中，ALU对\code{rs1,rs2}和\code{rs1,imm}进行指令指定的计算，计算结果在“跳过DMEM”后直接通过MUX写回至\code{rd}。由此可见ALU输出的多重功能，对于写回值，既可能直接来自ALU的计算结果，也可能来自ALU的计算结果代表的地址处的数据。
+
+在BRANCH和JAL指令类型中，\code{PCTarget}加法器计算跳转指令地址\code{pc+imm}，\code{PCPlus4}加法器计算顺序指令地址\code{pc+4}，两者都被送至产生的\code{PCNext}的MUX处，对于BRANCH指令，ALU会计算\code{rs1,rs2}的减法，ALU在正常输出外还会产生一个指示计算结果是否为零的的控制信号\code{Zero}，其被接至Control Unit从而产生选择下一指令地址的\code{PCSrc}。而有所不同的是，对于JAL指令，其总是选择跳转地址，但\code{pc+4}同样不会浪费，其需要写回至\code{rd}。
 
 \subsection{单周期处理器的性能分析}
 \cref{tab:参考电路延时}指出，在处理器中，存储器读取（$t_{mem}=\qnum{200}{ps}$）和算数逻辑单元（$t_{alu}=\qnum{120}{ps}$）是最为耗时的步骤，而LOAD类型的\code{lw}指令会同时涉及这两个操作（ALU计算地址，DMEM读取数据），作为最慢的指令，它会限制单周期处理器的最小周期。根据\cref{tab:单周期RISC-V处理器的数据通路}可知
