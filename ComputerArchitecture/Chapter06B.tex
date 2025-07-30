@@ -49,7 +49,7 @@ R型指令都是寄存器的运算指令，大致可以分为四类：算数运�
         cell{even[2-Z]}{1-Z}={preto=\ttfamily},
         cell{odd[2-Z]}{1}={c=2}{halign=l},
         cell{odd[2-Z]}{3}={c=4}{halign=r},
-        hline{even[3-Y]}={\linethin}
+        hline{even[3-Y]}={\linesplit},
     }
         指令&用途&类型&opcode&f3&f7\\
         add rd,rs1,rs2&rd=rs1+rs2&R&0110011&000&0000000\\*
@@ -103,7 +103,7 @@ I型指令的编码结构、编码字段、包含的指令如\cref{fig:I型指�
         cell{even[2-Z]}{1-Z}={preto=\ttfamily},
         cell{odd[2-Z]}{1}={c=2}{halign=l},
         cell{odd[2-Z]}{3}={c=4}{halign=r},
-        hline{even[3-Y]}={\linethin}
+        hline{even[3-Y]}={\linesplit},
     }
         指令&用途&类型&opcode&f3&f7\\
         addi rd,rs1,imm&rd=rs1+SE(imm)&I1&0010011&000&-------\\*
@@ -139,7 +139,6 @@ I型指令的编码结构、编码字段、包含的指令如\cref{fig:I型指�
     \end{tblr}
 \end{Table}
 
-
 \subsection{S/B型指令}
 S型指令和B型指令的编码结构、编码字段、包含的指令如\cref{fig:S型指令的编码}和\cref{fig:B型指令的编码}所示。
 
@@ -160,7 +159,7 @@ S型指令和B型指令的编码结构、编码字段、包含的指令如\cref{
         cell{even[2-Z]}{1-Z}={preto=\ttfamily},
         cell{odd[2-Z]}{1}={c=2}{halign=l},
         cell{odd[2-Z]}{3}={c=4}{halign=r},
-        hline{even[3-Y]}={\linethin}
+        hline{even[3-Y]}={\linesplit},
     }
         指令&用途&类型&opcode&f3&f7\\
         sb rs2,imm(rs1)&[rs1+SE(imm)][7:0]=rs2[7:0]&S&0100011&000&-------\\*
@@ -218,7 +217,7 @@ U/J型都用$20$位编码的立即数，两者的处理各不相同
         cell{even[2-Z]}{1-Z}={preto=\ttfamily},
         cell{odd[2-Z]}{1}={c=2}{halign=l},
         cell{odd[2-Z]}{3}={c=4}{halign=r},
-        hline{even[3-Y]}={\linethin}
+        hline{even[3-Y]}={\linesplit},
     }
         指令&用途&类型&opcode&f3&f7\\
         jal rd,lab&rd=pc+4, pc+=SE(\{imm,1'b0\})&J&1101111&---&-------\\*

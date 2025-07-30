@@ -79,18 +79,16 @@
 多周期处理器的分析难点在于，一条指令的执行需要经历若干状态，而每个状态都意味着一张不同的数据通路，有些状态又会被不同指令复用。\cref{tab:多周期RISC-V处理器的数据通路}展示了S0至S10的数据通路。
 
 接下来，我们会逐一分析多周期处理器每个状态的数据通路。
-\begin{Table}[多周期RISC-V处理器的数据通路]!!
+\begin{Table}[多周期RISC-V处理器的数据通路]&!!
     \begin{tblr}
     {
         colspec={X[c]X[c]},
-        hline{2}={\linenone},
-        hline{odd[2-Y]}={\linethin},
-        vline{1,Z}={\linethick},
-        vline{2}={\linethin},
+        hline{odd[2-Y]}={\linemiddle},
+        vline{1,Z}={\lineborder},
+        vline{2}={\linemiddle},
         row{odd[1-Z]}={abovesep=6pt,belowsep=-4pt},
         row{even[1-Z]}={abovesep=0pt},
         cell{1-2}{1}={c=2}{halign=c},
-        rowhead=0,
     }
         \includegraphics[width=0.45\textwidth]{Chapter07C_02.fig.pdf}&\\*
         S0 : Fetch&\\

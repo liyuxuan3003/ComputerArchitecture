@@ -21,7 +21,7 @@
     \begin{tblr}
     {
         colspec={lllX},
-        cell{2-Z}{2-3}={preto=\ttfamily}
+        cell{2-Z}{2-3}={preto=\ttfamily},
     }
         类型&指令&输入输出&作用\\
         I/LOAD&lw&rs1,imm,rd&由\texttt{rs1+imm} 的地址读取数据，数据写至\texttt{rd}\\
@@ -101,17 +101,15 @@
 
 \subsection{单周期处理器的数据通路}
 首先，所有类型的指令共用的数据通路是：当前周期指令的地址\code{pc}从PC寄存器中取出，经过\code{PCPlus4}加法器计算顺序执行的下一条指令地址\code{pc+4}。同时，指令地址\code{pc}经过IMEM读出当前指令内容\code{instr}，描述指令类型的\code{op,funct3,funct7}字段被送至控制单元译码，描述寄存器地址的\code{xrs1,xrs2,xrd}字段被送至寄存器堆的地址端，描述立即数的\code{ximm}字段被送至立即数扩展单元（这里前缀\code{x}用于区分寄存器地址和寄存器值/立即数字段和立即数）。
-\begin{Table}[单周期RISC-V处理器的数据通路]!!
+\begin{Table}[单周期RISC-V处理器的数据通路]&!!
     \begin{tblr}
     {
         colspec={X[c]X[c]},
-        hline{2}={\linenone},
-        hline{odd[2-Y]}={\linethin},
-        vline{1,Z}={\linethick},
-        vline{2}={\linethin},
+        hline{odd[2-Y]}={\linemiddle},
+        vline{1,Z}={\lineborder},
+        vline{2}={\linemiddle},
         row{odd[1-Z]}={abovesep=6pt,belowsep=-4pt},
         row{even[1-Z]}={abovesep=0pt},
-        rowhead=0,
     }
         \includegraphics[width=0.45\textwidth]{Chapter07B_02.fig.pdf}&
         \includegraphics[width=0.45\textwidth]{Chapter07B_03.fig.pdf}\\*
