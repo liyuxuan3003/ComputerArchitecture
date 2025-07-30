@@ -1,6 +1,6 @@
 \section{多周期处理器}
 
-多周期处理器的完整电路如\cref{fig:多周期RISC-V处理器}所示。通过\cref{sec:单周期处理器}的学习，我们已经知道单周期处理器有以下三个缺点：第一个缺点是它需要分离的IMEM和DMEM，然而大部分处理器只有一块MEM用来存储指令和数据。第二个缺点是它的时钟周期需要支持最慢的\code{lw}指令，即便其他指令需要的时间更少。第三个缺点是它需要三个加法器：一个用于ALU，两个用于PC，而加法器是硬件开销相对大的电路单元。而多周期处理器提出了一种解决上述缺点的方案。
+多周期处理器的完整电路如\cref{fig:多周期RISC-V处理器}所示。通过\cref{sec:单周期处理器}的学习，我们已经知道单周期处理器有以下三个缺点：第一个缺点是它需要分离的IMEM和DMEM，然而大部分处理器只有一块MEM用来存储指令和数据。第二个缺点是它的时钟周期需要支持最慢的\code{lw}指令，即便其他指令需要的时间更少。第三个缺点是它需要三个加法器：一个用于ALU，两个用于PC，而加法器是硬件资源开销相对大的电路单元。而多周期处理器提出了一种可以解决上述缺点的方案。
 \begin{Figure}[多周期RISC-V处理器]
     \includegraphics[width=\linewidth]{Chapter07C_01.fig.pdf}
 \end{Figure}
@@ -116,7 +116,7 @@
 \end{Table}
 
 \paragraph{状态S0（Fetch）}
-状态S0（Fetch）的主要功能是根据当前指令地址\code{pc}取出指令\code{instr}并计算顺序执行的下一指令地址\code{pc+4}。该状态从\code{pc}从PC寄存器中取出开始，它会经历三条并行路径。第一条路径是\code{pc}通过MUX到达\code{Adr}即MEM的地址端，从MEM中取出指令内容\code{instr}并写入寄存器\code{Instr}。第二条路径是\code{pc}直接写入寄存器\code{PCCurr}。应指出，后续寄存器\code{PCCurr}和\code{Instr}会由于\code{IRWrite}信号的撤去使写入的\code{pc}和\code{instr}被锁存住，在整个指令执行期间始终保持可用。第三条路径是\code{pc}通过MUX到达\code{SrcA}，同时\code{SrcB}则为\code{4}，两者经过ALU得到\code{pc+4}，作为\code{ALUResult}通过MUX到达\code{Result}并写回\code{PC}寄存器，作为下一指令的地址。若之后发现执行的是分支指令或跳转指令，且确实需要跳转，会再次覆写\code{PC}寄存器。
+状态S0（Fetch）的主要功能是根据当前指令地址\code{pc}取出指令\code{instr}并计算顺序执行的下一指令地址\code{pc+4}。该状态从\code{pc}从PC寄存器中取出开始，它会经历三条并行路径。第一条路径是\code{pc}通过MUX到达\code{Adr}即MEM的地址端，从MEM中取出指令内容\code{instr}并写入寄存器\code{Instr}。第二条路径是\code{pc}直接写入寄存器\code{PCCurr}。应指出，后续寄存器\code{PCCurr}和\code{Instr}会由于\code{IRWrite}信号的撤去使写入的\code{pc}和\code{instr}被锁存住，在整个指令执行期间始终保持可用。第三条路径是\code{pc}通过MUX到达\code{SrcA}，同时\code{SrcB}则为\code{4}，两者经过ALU得到\code{pc+4}，作为\code{ALUResult}通过MUX到达\code{Result}并写回\code{PC}寄存器，作为下一指令的地址。若之后发现执行的是分支指令或跳转指令，且确实需要跳转，会再次用跳转地址覆写\code{PC}寄存器。
 
 这里有必要说明的是\code{SrcA}和\code{Result}前的两个MUX，它们都对相似的信号有两个通道
 \begin{itemize}
