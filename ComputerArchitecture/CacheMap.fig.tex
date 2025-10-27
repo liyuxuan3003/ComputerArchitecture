@@ -1,0 +1,56 @@
+\makeatletter\def\input@path{{minimus}{standalone-silicon}}\makeatother
+
+\documentclass{standalone-silicon}
+
+\usepackage{minimus-text}
+\usepackage{minimus-math}
+\usepackage{minimus-tikz}
+
+\begin{document}
+\begin{tikzpicture}
+
+\path (0,0) coordinate (M-1) ; 
+\foreach \n/\nb/\nh in {0/000/00,1/001/04,2/010/08,3/011/0C,4/100/10,5/101/14,6/110/18,7/111/1C}
+{
+    \path (M\fpeval{\n-1}.north) node[draw,anchor=south,minimum width=3.5cm,minimum height=0.6cm,font=\ttfamily,fill=red!\fpeval{\n*50-100}!blue!20!white] (M\n) {mem[0x000000\nh]} ; 
+    \path (M\n.west) node[left,font=\ttfamily] (LBM\n) {00...000\ \textcolor{red}{\nb}\ 00} ;
+}
+
+\path (M7.north) coordinate (N-1) ;
+\foreach \n/\nb/\nh in {0/000/20,1/001/24,2/010/28,3/011/2C,4/100/30,5/101/34,6/110/38,7/111/3C}
+{
+    \path (N\fpeval{\n-1}.north) node[draw,anchor=south,minimum width=3.5cm,minimum height=0.6cm,font=\ttfamily,fill=red!\fpeval{\n*50-100}!blue!20!white] (N\n) {mem[0x000000\nh]} ;    
+    \path (N\n.west) node[left,font=\ttfamily] (LBN\n) {00...001\ \textcolor{red}{\nb}\ 00} ;
+}
+
+\path (N7.north) node[above,minimum height=0.5cm] (LBdots) {$\dots$} ;
+\path (LBdots.north) coordinate (P-1) ;
+\foreach \n/\nb/\nh in {0/000/E0,1/001/E4,2/010/E8,3/011/EC,4/100/F0,5/101/F4,6/110/F8,7/111/FC}
+{
+    \path (P\fpeval{\n-1}.north) node[draw,anchor=south,minimum width=3.5cm,minimum height=0.6cm,font=\ttfamily,fill=red!\fpeval{\n*50-100}!blue!20!white] (P\n) {mem[0xFFFFFF\nh]} ;    
+    \path (P\n.west) node[left,font=\ttfamily] (LBP\n) {11...111\ \textcolor{red}{\nb}\ 00} ;
+}
+
+\path (6,0) coordinate (C-1) ;
+\foreach \n/\nb in {0/000,1/001,2/010,3/011,4/100,5/101,6/110,7/111}
+{
+    \path (C\fpeval{\n-1}.north) node[draw,anchor=south,minimum width=3.5cm,minimum height=0.6cm,font=\ttfamily,fill=red!\fpeval{\n*50-100}!blue!20!white] (C\n) {} ; 
+    \path (C\n.east) node[right,font=\ttfamily] (LBC\n) {Set \n (\textcolor{red}{\nb})} ;
+}
+
+\draw[-latex,thick] (M1.east) -- (C1.west) ; 
+\draw[-latex,thick] (N1.east) to[out=0,in=90] ($(C1.north west)!0.27!(C1.north east)$) ;
+\draw[-latex,thick] (P1.east) to[out=0,in=90] ($(C1.north west)!0.54!(C1.north east)$) ;
+
+\path (M0.south) node[below] (LBMemory) {$2^{30}$ Word Main Memory} ;  
+
+\path (C0.south) node[below] (LBCache) {$2^{3}$ Word Cache} ;  
+
+\path (LBP7.north) node[above] (LBAddr) {Address} ;
+
+\path (P7.north) node[above] (LBData) {Data} ;
+
+\draw[ultra thin] ($(LBM0.west|-LBMemory.south)+(-0.2,-0.2)$) rectangle ($(LBC0.east|-LBData.north)+(0.2,0.2)$) ;
+
+\end{tikzpicture}
+\end{document}
