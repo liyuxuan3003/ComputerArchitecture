@@ -7,7 +7,7 @@
 \usepackage{minimus-tikz}
 
 \begin{document}
-\begin{tikzpicture}
+\begin{tikzpicture}[font=\ttfamily]
 
 \path (0,0) coordinate (M-1) ; 
 \foreach \n/\nb/\nh in {0/000/00,1/001/04,2/010/08,3/011/0C,4/100/10,5/101/14,6/110/18,7/111/1C}
@@ -35,7 +35,7 @@
 \foreach \n/\nb in {0/000,1/001,2/010,3/011,4/100,5/101,6/110,7/111}
 {
     \path (C\fpeval{\n-1}.north) node[draw,anchor=south,minimum width=3.5cm,minimum height=0.6cm,font=\ttfamily,fill=red!\fpeval{\n*50-100}!blue!20!white] (C\n) {} ; 
-    \path (C\n.east) node[right,font=\ttfamily] (LBC\n) {Set \n (\textcolor{red}{\nb})} ;
+    \path (C\n.east) node[right,font=\ttfamily] (LBC\n) {\rmfamily Set \n\ (\textcolor{red}{\ttfamily\nb})} ;
 }
 
 \draw[-latex,thick] (M1.east) -- (C1.west) ; 
