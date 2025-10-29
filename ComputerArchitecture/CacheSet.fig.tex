@@ -1,0 +1,151 @@
+\makeatletter\def\input@path{{minimus}{standalone-silicon}}\makeatother
+
+\documentclass{standalone-silicon}
+
+\usepackage{minimus-text}
+\usepackage{minimus-math}
+\usepackage{minimus-tikz}
+
+\usepackage{RISCVMicroarchitecture}
+
+\begin{document}
+\begin{tikzpicture}[font=\ttfamily]
+
+\def\ulen{0.4}
+
+\path (0,0) coordinate (O) ;
+\path (0,0) coordinate (xML) ;
+\path (4.5,0) coordinate (xCL) ;
+\path (0,0) coordinate (yMB) ;
+\path (0,-4) coordinate (yCB) ;
+
+% Bit of memory address
+\foreach \x in {0,1,...,9}
+{
+    \path ($(xML|-yMB)+(\x*\ulen,0)$) node[cache bit] (M\x) {} ;  
+}
+
+% Bit of cache
+\foreach \x in {0,1,...,13}
+{
+    \foreach \y in {0,1,...,7}
+    {
+        \path ($(xCL|-yCB)+(\x*\ulen,\y*\ulen)$) node[cache bit] (C\y-\x) {} ;  
+    } 
+}
+
+% Block of memory address
+% Tag  M0 ~ M4
+% Set  M5 ~ M7
+% Byte M8 ~ M9
+\path (O) node[cache block,fit=(M0.south west)(M4.north east)] (MTag) {} ; 
+\path (O) node[cache block,fit=(M5.south west)(M7.north east)] (MSet) {} ; 
+\path (O) node[cache block,fit=(M8.south west)(M9.north east)] (MByte) {} ; 
+
+% Block of cache
+% V    Cn-0 ~ Cn-0
+% Tag  Cn-1 ~ Cn-5
+% Data Cn-6 ~ Cn-13
+\foreach \y in {0,1,...,7}
+{
+    \path (O) node[cache block,fit=(C\y-0.south west)(C\y-0.north east)] (C\y V) {} ;
+    \path (O) node[cache block,fit=(C\y-1.south west)(C\y-5.north east)] (C\y Tag) {} ;
+    \path (O) node[cache block,fit=(C\y-6.south west)(C\y-13.north east)] (C\y Data) {} ;
+}
+
+% Memory address tag
+\foreach \x/\d in {1/$\cdots$,2/1,3/0,4/1}
+{
+    \path (M\x) node[] (LBM\x) {\d} ;
+}
+
+% Memory address set
+\foreach \x/\d in {5/0,6/1,7/0}
+{
+    \path (M\x) node[red] (LBM\x) {\d} ;
+}
+
+% Memory address byte offset
+\foreach \x/\d in {8/0,9/0}
+{
+    \path (M\x) node[gray] (LBM\x) {\d} ;
+}
+
+% Cache set 2 v
+\foreach \x/\d in {0/1}
+{
+    \path (C2-\x) node[] (LBC2-\x) {\d} ;
+}
+
+% Cache set 2 tag
+\foreach \x/\d in {2/$\cdots$,3/1,4/0,5/1}
+{
+    \path (C2-\x) node[] (LBC2-\x) {\d} ;
+}
+
+% Cache set 2 data
+\foreach \x/\d in {7/$\cdots$,8/1,9/0,10/0,11/0,12/1,13/1}
+{
+    \path (C2-\x) node[gray] (LBC2-\x) {\d} ;
+}
+
+% Memory address border line
+\draw[digital draw] (MTag.south west) rectangle (MByte.north east) ;
+
+% Cache border line
+\draw[digital draw] (C0V.south west) rectangle (C7Data.north east) ;
+
+% Cache set marker
+\foreach \y/\b in {0/000,1/001,2/010,3/011,4/100,5/101,6/110,7/111}
+{
+    \path (C\y Data.east) node[right,red] (LBSet\y) {\b} ;
+} 
+
+% Equal
+\path ($(MTag.south|-C0V)+(0,-1)$) node[equal,anchor=120] (Eq) {\equalsymb} ;
+\path ($(C0Tag.south)!0.5!(Eq.north)$) coordinate (yEq) ;
+
+% And
+\path (Eq.south) ++(0,-0.6) node[digital,and port,anchor=in 2,f--r-] (And) {} ; 
+\path ($(C0V)!0.8!(And.west)$) coordinate (yAnd) ;
+\path (And.east) ++ (0,-0.5) coordinate (yOut) ;
+
+% Memory.Set -> Cache
+\draw[line data,-latex] (MSet.south) node[below right,gray,font=\small] (LBs3) {$\log_{2}S=3$}  |- (C2V.west) node[above left,signal] (SISet) {Set[2:0]}  ;
+
+% Memory.Tag -> Equal
+\draw[line data] (MTag.south) -- node[right,pos=0.8,signal] (SITag) {Tag[26:0]} (Eq.120) ;
+
+% Cache.Tag -> Equal
+\draw[line data] (C0Tag.south) node[below right,signal] (SITagCache) {Tag[26:0]} |- (Eq.60|-yEq) -- (Eq.60) ; 
+
+% Cache.V -> And
+\draw[line control] (C0V.south) -- (C0V.south|-yAnd) node[above left,signal] (SIVCache) {V} -- (And.in 1|-yAnd) -- (And.in 1) ; 
+
+% Equal -> And
+\draw[line control] (Eq.south) -- (And.in 2) ;
+
+% And -> Hit
+\draw[line control] (And.out) -- (And.out|-yOut) node[ocirc] (OCHit) {}  node[signal,below] (SIHit) {Hit} ;
+
+% Cache.Data -> Data
+\draw[line data] (C0Data.south) -- (C0Data.south|-yOut) node[ocirc] (OCData) {}  node[signal,below] (SIDataCache) {Data[31:0]} ;  
+
+% Text of memory address
+\path (MTag.north) node[above,font=\rmfamily] (LBTag) {Tag} ; 
+\path (MSet.north) node[above,font=\rmfamily] (LBSet) {Set\vphantom{g}} ;
+\path (MByte.north east) node[right,font=\rmfamily] (LBOffset) {Byte Offset} ;  
+\path ($(M0.north)!0.5!(M9.north)$) node[above=0.5cm,font=\rmfamily\bfseries\large] (LBMemoryAddress) {Memory Address} ;
+
+% Text of cache
+\path (C7V.north) node[above,font=\rmfamily] (LBCacheV) {V\vphantom{g}} ; 
+\path (C7Tag.north) node[above,font=\rmfamily] (LBCacheTag) {Tag} ; 
+\path (C7Data.north) node[above,font=\rmfamily] (LBCacheData) {Data\vphantom{g}} ; 
+\path (LBSet7.north|-C7Data.north) node[above,font=\rmfamily] (LBCacheSet) {Set\vphantom{g}} ;  
+\path (C6-0.west) node[left,font=\rmfamily\bfseries\large] (LBCache) {Cache} ;
+
+% Border
+\draw[ultra thin] ($(MTag.west|-SIHit.south)+(-0.3,-0.2)$) rectangle ($(LBSet0.east|-LBMemoryAddress)+(0.2,0.4)$) ; 
+
+\end{tikzpicture}
+\end{document}
