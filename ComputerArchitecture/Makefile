@@ -8,6 +8,6 @@ include makefile-latex/makefile-latex.mk
 
 FIGS_TEX_RISCV_MA:=$(wildcard Chapter07*.fig.tex)
 FIGS_TEX_PDF_RISCV_MA:=$(addprefix ${BUILD_DIR}/,$(FIGS_TEX:.tex=.pdf))
-STYS_RISCV_MA:=RISCVMicroarchitecture.sty
+STYS_RISCV_MA:=riscv-ma.sty
 
 ${FIGS_TEX_PDF_RISCV_MA}: ${STYS_RISCV_MA}
