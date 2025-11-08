@@ -1,0 +1,44 @@
+\makeatletter\def\input@path{{minimus}{standalone-silicon}}\makeatother
+
+\documentclass{standalone-silicon}
+
+\usepackage{minimus-text}
+\usepackage{minimus-math}
+\usepackage{minimus-tikz}
+
+\begin{document}
+\begin{tikzpicture}
+
+\tikzset{block/.style={draw,very thick,fill=black!20!white,minimum width=1.5cm,minimum height=1.5cm,align=center}}
+
+\path (0,0) node[block] (CPU) {CPU} ;
+
+\path (CPU.east) ++(2.5,0) node[block,anchor=west] (Cache) {L1/L2 Cache\\ (SRAM)} ; 
+
+\path (Cache.east) ++(3,0) node[block,anchor=west] (Memory) {Memory\\ (DRAM)} ;
+
+\path (Memory.east) ++(4.5,0) node[block,anchor=west] (Drive) {Hard Drive\\ (SSD/HDD)} ;
+
+\draw[dashed] ($(CPU.south west)+(-0.3,-0.8)$) coordinate (PCMin) rectangle ($(Cache.north east)+(0.3,0.8)$) coordinate (PCMax) ;
+
+\path ($(PCMin)!0.5!(PCMin-|PCMax)$) node[below] (LBPC) {Processor Chip} ;
+
+\foreach \ma/\mb/\ta/\tb in {CPU/Cache/{\qnum{0.2}{\ns}/\qnum{2.0}{\ns}}/\qnum{100}{\gibi\byte\per\second},Cache/Memory/\qnum{20}{\ns}/\qnum{30}{\gibi\byte\per\second},Memory/Drive/{\qnum{20000}{\ns}/\qnum{5000000}{\ns}}/{\qnum{1}{\gibi\byte\per\second}/\qnum{100}{\mebi\byte\per\second}}}
+{
+    \draw[-latex,thick] ($(\ma.north east)!0.4!(\ma.south east)$) -- node[above] (AT\mb) {\ta\vphantom{/}} ($(\mb.north west)!0.4!(\mb.south west)$) ;
+    \draw[latex-,thick] ($(\ma.north east)!0.6!(\ma.south east)$) -- node[below] (BW\mb) {\tb\vphantom{/}} ($(\mb.north west)!0.6!(\mb.south west)$) ;
+}
+
+\path (Cache.north) node[above] (CPCache) {\qnum{512}{\kibi\byte}/\qnum{8}{\mebi\byte}} ;
+\path (Cache.south) node[below] (PRCache) {\$\num{100} (\si{\per\gibi\byte})} ;
+
+\path (Memory.north) node[above] (CPMemory) {\qnum{32}{\gibi\byte}} ;
+\path (Memory.south) node[below] (PRMemory) {\$\num{3} (\si{\per\gibi\byte})} ;
+
+\path (Drive.north) node[above] (CPDrive) {\qnum{1}{\tebi\byte}} ;
+\path (Drive.south) node[below] (PRDrive) {\$\num{0.10}/\$\num{0.03} (\si{\per\gibi\byte})} ;
+
+\draw[ultra thin] ($(PCMin|-LBPC.south)+(-0.2,-0.2)$) rectangle ($(PRDrive.east|-PCMax)+(0.2,0.2)$) ;
+
+\end{tikzpicture}
+\end{document}

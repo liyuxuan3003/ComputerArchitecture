@@ -1,0 +1,211 @@
+\makeatletter\def\input@path{{minimus}{standalone-silicon}}\makeatother
+
+\documentclass{standalone-silicon}
+
+\usepackage{minimus-text}
+\usepackage{minimus-math}
+\usepackage{minimus-tikz}
+
+\usepackage{riscv-ma}
+
+\begin{document}
+\begin{tikzpicture}[font=\ttfamily]
+
+\def\ulen{0.4}
+
+\path (0,0) coordinate (O) ;
+\path (0,0) coordinate (xML) ;
+\path (4.0,0) coordinate (xCL) ;
+\path (0,0) coordinate (yMB) ;
+\path (0,-2) coordinate (yCB) ;
+
+% Bit of memory address
+\foreach \x in {0,1,...,9}
+{
+    \path ($(xML|-yMB)+(\x*\ulen,0)$) node[cache bit] (M\x) {} ;  
+}
+
+% Bit of cache way 0
+\foreach \x in {0,1,...,37}
+{
+    \foreach \y in {0,1}
+    {
+        \path ($(xCL|-yCB)+(\x*\ulen,\y*\ulen)$) node[cache bit] (C\y-\x) {} ;  
+    } 
+}
+
+% Block of memory address
+% Tag   M0 ~ M4
+% Set   M5 ~ M5
+% Block M6 ~ M7
+% Byte  M8 ~ M9
+\path (O) node[cache block,fit=(M0.south west)(M4.north east)] (MTag) {} ; 
+\path (O) node[cache block,fit=(M5.south west)(M5.north east)] (MSet) {} ; 
+\path (O) node[cache block,fit=(M6.south west)(M7.north east)] (MBlock) {} ; 
+\path (O) node[cache block,fit=(M8.south west)(M9.north east)] (MByte) {} ; 
+
+% Block of cache
+% V     Cn-0  ~ Cn-0
+% Tag   Cn-1  ~ Cn-5
+% Data3 Cn-6  ~ Cn-13
+% Data2 Cn-14 ~ Cn-21
+% Data1 Cn-22 ~ Cn-29
+% Data0 Cn-30 ~ Cn-37
+\foreach \y in {0,1}
+{
+    \path (O) node[cache block,fit=(C\y-0.south west)(C\y-0.north east)] (C\y V) {} ;
+    \path (O) node[cache block,fit=(C\y-1.south west)(C\y-5.north east)] (C\y Tag) {} ;
+    \path (O) node[cache block,fit=(C\y-6.south west)(C\y-13.north east)] (C\y Data3) {} ;
+    \path (O) node[cache block,fit=(C\y-14.south west)(C\y-21.north east)] (C\y Data2) {} ;
+    \path (O) node[cache block,fit=(C\y-22.south west)(C\y-29.north east)] (C\y Data1) {} ;
+    \path (O) node[cache block,fit=(C\y-30.south west)(C\y-37.north east)] (C\y Data0) {} ;
+}
+
+% Memory address tag
+\foreach \x/\d in {1/$\cdots$,2/1,3/0,4/1}
+{
+    \path (M\x) node[] (LBM\x) {\d} ;
+}
+
+% Memory address set
+\foreach \x/\d in {5/0}
+{
+    \path (M\x) node[red] (LBM\x) {\d} ;
+}
+
+% Memory address block
+\foreach \x/\d in {6/1,7/0}
+{
+    \path (M\x) node[blue] (LBM\x) {\d} ;
+}
+
+% Memory address byte offset
+\foreach \x/\d in {8/0,9/0}
+{
+    \path (M\x) node[gray] (LBM\x) {\d} ;
+}
+
+
+% Cache set 2 v,u
+\foreach \x/\d in {0/1}
+{
+    \path (C0-\x) node[] (LBC0-\x) {\d} ;
+}
+
+% Cache set 2 tag
+\foreach \x/\d in {2/$\cdots$,3/1,4/0,5/1}
+{
+    \path (C0-\x) node[] (LBC0-\x) {\d} ;
+}
+
+% Cache set 2 data
+\foreach \x/\d in {7/$\cdots$,8/0,9/0,10/0,11/0,12/0,13/1}
+{
+    \path (C0-\x) node[gray] (LBC0-\x) {\d} ;
+}
+\foreach \x/\d in {7/$\cdots$,8/1,9/0,10/0,11/0,12/1,13/1}
+{
+    \path (C0-\fpeval{\x+8}) node[gray] (LBC0-\fpeval{\x+8}) {\d} ;
+}
+\foreach \x/\d in {7/$\cdots$,8/0,9/0,10/0,11/0,12/1,13/0}
+{
+    \path (C0-\fpeval{\x+16}) node[gray] (LBC0-\fpeval{\x+16}) {\d} ;
+}
+\foreach \x/\d in {7/$\cdots$,8/0,9/0,10/0,11/1,12/0,13/0}
+{
+    \path (C0-\fpeval{\x+24}) node[gray] (LBC0-\fpeval{\x+24}) {\d} ;
+}
+
+% Memory address border line
+\draw[digital draw] (MTag.south west) rectangle (MByte.north east) ;
+
+% Cache border line
+\draw[digital draw] (C0V.south west) rectangle (C1Data0.north east) ;
+
+% Cache set marker
+\foreach \y/\b in {0/0,1/1}
+{
+    \path (C\y Data0.east) node[right,red] (LBSet\y) {\b} ;
+} 
+
+% Equal
+\path ($(MTag.south|-C0V)+(0,-1.2)$) node[equal,anchor=120] (Eq) {\equalsymb} ;
+\path ($(C0Tag.south)!0.5!(Eq.north)$) coordinate (yEq) ;
+
+% And
+\path (Eq.south) ++(0,-1.0) node[digital,and port,anchor=in 2,f--r-] (And) {} ; 
+\path ($(Eq.south)!0.5!(And.west)$) coordinate (yAnd) ;
+\path ($(And.south)+(0,-1.5)$) coordinate (yOut) ; 
+
+% Mux
+\path ($(C0Data2.south)!0.5!(C0Data1.south)$) ++ (0,-3) node[digital,mux41,anchor=west,f--r-] (Mux) {} ; 
+\path ($(Mux.west)!0.5!(C0Data2.south)$) coordinate (yMux1) ;
+\path ($(Mux.west)!0.7!(C0Data2.south)$) coordinate (yMux2) ;
+\foreach \mux in {Mux}
+{
+    \path (\mux.blpin 1) node[muxopt,below=0.1cm] {00};
+    \path (\mux.blpin 2) node[muxopt,below=0.1cm] {10};
+    \path (\mux.blpin 3) node[muxopt,below=0.1cm] {10};
+    \path (\mux.blpin 4) node[muxopt,below=0.1cm] {11};
+}
+
+% Memory.Set -> Cache
+\draw[line control,-latex] (MSet.south) node[below left,gray,font=\small] (LBs1) {\rotatebox{-90}{$\log_{2}S=1$}} |- (C0V.west) node[above left,signal] (SISet) {Set} ;
+
+% Memory.Tag -> Equal
+\draw[line data] (MTag.south) -- node[pos=0.72,right,signal] (SITag) {Tag[27:0]} (Eq.120) ;
+
+% Cache.Tag -> Equal
+\draw[line data] (C0Tag.south) node[below right,signal] (SITagCachhe) {Tag[27:0]} |- (Eq.60|-yEq) -- (Eq.60) ; 
+
+% Cache.V -> And
+\draw[line control] (C0V.south) -- (C0V.south|-yAnd) node[above left,signal] (SIVCache) {V} -- (And.in 1|-yAnd) -- (And.in 1) ; 
+
+% Equal -> And
+\draw[line control] (Eq.south) -- (And.in 2) ;
+
+% And -> Hit
+\draw[line control] (And.out) -- (And.out|-yOut) node[ocirc] (OCHit) {}  node[signal,below] (SIHit) {Hit} ;
+
+% Cache.Data -> Data
+\draw[line data] (C0Data3.south) -- (C0Data3.south|-yMux1) node[above left,signal] (SIDataB1) {Data3[31:0]} -| (Mux.blpin 4);  
+\draw[line data] (C0Data2.south) -- (C0Data2.south|-yMux2) node[above left,signal] (SIDataB2) {Data2[31:0]} -| (Mux.blpin 3);  
+\draw[line data] (C0Data1.south) -- (C0Data1.south|-yMux2) node[above left,signal] (SIDataB1) {Data1[31:0]} -| (Mux.blpin 2);  
+\draw[line data] (C0Data0.south) -- (C0Data0.south|-yMux1) node[above left,signal] (SIDataB0) {Data0[31:0]} -| (Mux.blpin 1);  
+
+% Mux
+\draw[line control,-latex] ($(MBlock.south)+(0.2,0)$) node[below left,gray,font=\small] (LBb2) {\rotatebox{-90}{$\log_{2}B=2$}} |- (Mux.bbpin 1) node[above left,signal] (SIBlock) {Block[1:0]}  ;
+\draw[line data] (Mux.brpin 1) -- (Mux.brpin 1|-yOut) node[ocirc] (OCData) {} node[below,signal] (SIData) {Data[31:0]} ;  
+
+% Text of memory address
+\path (MTag.north) node[above,font=\rmfamily] (LBTag) {Tag} ; 
+\path (MSet.north) node[above,font=\rmfamily] (LBSet) {Set\vphantom{g}} ;
+\path (MBlock.north) ++(0.4,0) node[above,font=\rmfamily] (LBBlock) {Block\vphantom{g}} ;
+\path (MByte.north east) node[right,font=\rmfamily] (LBOffset) {Byte Offset} ;  
+\path ($(M0.north)!0.5!(M9.north)$) node[above=0.5cm,font=\rmfamily\bfseries\large] (LBMemoryAddress) {Memory Address} ;
+
+% Text of cache
+\path (C1V.north) node[above,font=\rmfamily] (LBCacheV) {V\vphantom{g}} ; 
+\path (C1Tag.north) node[above,font=\rmfamily] (LBCacheTag) {Tag} ; 
+\path ($(C1Data2.north)!0.5!(C1Data2.north)$) node[above,font=\rmfamily] (LBCacheData3) {Data\vphantom{g}} ; 
+\path (LBSet1.north|-C1Data0.north) node[above,font=\rmfamily] (LBCacheSet) {Set\vphantom{g}} ;  
+\path (C0Data0.south) node[below right=0.3cm,font=\rmfamily\bfseries\large] (LBCache) {Cache} ;
+
+% Text of way
+\path (C1Tag.north) ++ (0,1) coordinate (yWB) ++ (0,0.5) coordinate (yWA) ;
+\path ($(yWB)!0.5!(yWA)$) coordinate (yWC) ;  
+\draw[very thin] (C1Data0.east|-yWB) -- (C1Data0.east|-yWA) ; 
+\draw[very thin] (C1Data0.west|-yWB) -- (C1Data0.west|-yWA) ; 
+\draw[very thin] (C1Data1.west|-yWB) -- (C1Data1.west|-yWA) ; 
+\draw[very thin] (C1Data2.west|-yWB) -- (C1Data2.west|-yWA) ; 
+\draw[very thin] (C1Data3.west|-yWB) -- (C1Data3.west|-yWA) ; 
+\draw[very thin] (C1Data0.east|-yWC) -- node[above,font=\rmfamily] (LBBit0) {Bit 0} node[below,signal,blue] (LBBlock3) {00}  (C1Data0.west|-yWC) ; 
+\draw[very thin] (C1Data1.east|-yWC) -- node[above,font=\rmfamily] (LBBit1) {Bit 1} node[below,signal,blue] (LBBlock3) {01} (C1Data1.west|-yWC) ; 
+\draw[very thin] (C1Data2.east|-yWC) -- node[above,font=\rmfamily] (LBBit2) {Bit 2} node[below,signal,blue] (LBBlock3) {10} (C1Data2.west|-yWC) ; 
+\draw[very thin] (C1Data3.east|-yWC) -- node[above,font=\rmfamily] (LBBit3) {Bit 3} node[below,signal,blue] (LBBlock3) {11} (C1Data3.west|-yWC) ; 
+
+% Border
+\draw[ultra thin] ($(MTag.west|-SIHit.south)+(-0.3,-0.2)$) rectangle ($(LBSet0.east|-LBMemoryAddress)+(0.2,0.4)$) ; 
+
+\end{tikzpicture}
+\end{document}

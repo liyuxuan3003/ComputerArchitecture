@@ -1,4 +1,4 @@
-\ProvidesPackage{RISCVMicroarchitecture}
+\ProvidesPackage{riscv-ma}
 
 \tikzset{line data/.style={thick,black,color=black}}
 \tikzset{line control/.style={thin,black,color=black}}
@@ -16,12 +16,15 @@
 \ctikzset{logic ports/thickness=1.0}
 
 \tikzset{digital/.style={line width=1.0pt,font=\rmfamily,align=center,fill=black!10!white}}
+\tikzset{digital draw/.style={line width=1.0pt}}
 
 \tikzset{add/.style={muxdemux,digital,muxdemux def={Lh=5.0,Rh=4.0,NL=2,NR=3,NT=1,NB=0,w=2.0,inset w=1.0,inset Lh=1.0,inset Rh=0.0}}}
 
 \tikzset{mux21/.style={muxdemux,digital,muxdemux def={Lh=2.40,Rh=1.92,NL=2,NR=1,NT=1,NB=1,w=0.96}}}
 
 \tikzset{mux31/.style={muxdemux,digital,muxdemux def={Lh=2.88,Rh=2.40,NL=3,NR=1,NT=1,NB=1,w=0.96}}}
+
+\tikzset{mux41/.style={muxdemux,digital,muxdemux def={Lh=4.48,Rh=4.00,NL=4,NR=1,NT=1,NB=1,w=0.96}}}
 
 \tikzset{mem/.style={draw,digital,inner sep=0cm,minimum width=2.0cm,minimum height=3.5cm}}
 
@@ -36,6 +39,14 @@
 \tikzset{clk/.style={draw,anchor=north,thick,inner sep=0cm,isosceles triangle,shape border rotate=-90,isosceles triangle stretches,minimum width=0.5cm,minimum height=0.25cm}}
 
 \tikzset{muxopt/.style={right,inner sep=0.15em,font=\ttfamily\small}}
+
+\tikzset{equal/.style={draw,digital,inner sep=-1cm,minimum width=0.95cm,minimum height=0.55cm}}
+
+\NewDocumentCommand{\equalsymb}{}{\raisebox{-7.5pt}{\Large\bfseries =}}
+
+\tikzset{cache bit/.style={rectangle,minimum width=\ulen cm,minimum height=\ulen cm}}
+
+\tikzset{cache block/.style={rectangle,draw,very thin,inner sep=-0.2pt}}
 
 % -------------------- %
 
