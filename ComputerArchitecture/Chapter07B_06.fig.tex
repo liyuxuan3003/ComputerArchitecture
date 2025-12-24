@@ -265,10 +265,10 @@
 % ---- Line Control ---- %
 
 % RegWrite -> REGFILE.WE
-\draw[emph control] (CU-RegWrite) -| (REGFILE-WE) coordinate (xV-RegWrite);
+\draw[line control] (CU-RegWrite) -| (REGFILE-WE) coordinate (xV-RegWrite);
 
 % ImmSrc -> Extend
-\draw[line control] (CU-ImmSrc) -| (xImmSrc|-yImmSrc) coordinate (xV-ImmSrc) -| (IMMExtend.north);
+\draw[emph control] (CU-ImmSrc) -| (xImmSrc|-yImmSrc) coordinate (xV-ImmSrc) -| (IMMExtend.north);
 
 % ALUSrcB -> MUXSrcB
 \draw[emph control] (CU-ALUSrcB) -| (MUXSrcB.btpin 1) coordinate (xV-ALUSrcB);
@@ -292,7 +292,7 @@
 \foreach \x/\val/\direc/\type in%
 {%
     PCSrc/0|1/right/emph control,
-    RegWrite/1/right/emph control,
+    RegWrite/0/right/line control,
     ImmSrc/10/right/emph control,
     ALUSrcB/0/right/emph control,
     ALUControl/001/right/emph control,
