@@ -114,15 +114,15 @@ I型指令的编码结构、编码字段、包含的指令如\cref{fig:I型指�
         Shift Right Logical Immediate&&立即数逻辑右移&&&\\
         srai rd,rs1,imm&rd=rs1>>>imm&I2&0010011&101&0100000\\*
         Shift Right Arithmetic Immediate&&立即数算数右移&&&\\
-        xori rd,rs1,imm&rd=rs1\^{}SE(imm)&I1&0110011&100&-------\\*
+        xori rd,rs1,imm&rd=rs1\^{}SE(imm)&I1&0010011&100&-------\\*
         Xor Immediate&&立即数异或&&&\\
-        ori rd,rs1,imm&rd=rs1|SE(imm)&I1&0110011&110&-------\\*
+        ori rd,rs1,imm&rd=rs1|SE(imm)&I1&0010011&110&-------\\*
         Or Immediate&&立即数或&&&\\
-        andi rd,rs1,imm&rd=rs1\&SE(imm)&I1&0110011&111&-------\\*
+        andi rd,rs1,imm&rd=rs1\&SE(imm)&I1&0010011&111&-------\\*
         And Immediate&&立即数与&&&\\
-        slti rd,rs1,imm&rd=(rs1<SE(imm))&I1&0110011&010&-------\\*
+        slti rd,rs1,imm&rd=(rs1<SE(imm))&I1&0010011&010&-------\\*
         Set Less Than Immediate&&立即数当小于（有符号）时赋值&&&\\
-        sltiu rd,rs1,imm&rd=(rs1<SE(imm))&I1&0110011&011&-------\\*
+        sltiu rd,rs1,imm&rd=(rs1<SE(imm))&I1&0010011&011&-------\\*
         Set Less Than Immediate Unsigned&&立即数当小于（无符号）时赋值&&&\\
         lb rd,imm(rs1)&rd=SE([rs1+SE(imm)][7:0])&I1&0000011&000&-------\\*
         Load Byte&&读取字节&&&\\
