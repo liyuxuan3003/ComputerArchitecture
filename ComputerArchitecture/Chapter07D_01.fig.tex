@@ -99,7 +99,7 @@
     \path ($(REGFILE.south)!\fpeval{(\n+0.5)/5}!(IMMExtend.north east)$) coordinate (y\name);
 }
 
-% ---- Excute ---- %
+% ---- Execute ---- %
 
 % MUX Rs1Data
 \path (DE.east|-REGFILE-RD1) ++(5.5,0) node[mux31,anchor=blpin 1] (MUXRs1Data) {};
@@ -318,7 +318,7 @@
 \draw[line data] (xRs1D|-Hazard.north) node[above left,signal] {\rotatebox{90}{Rs1D}} -- (xRs1D|-yRs1) node[circ] {};
 \draw[line data] (xRs2D|-Hazard.north) node[above left,signal] {\rotatebox{90}{Rs2D}} -- (xRs2D|-yRs2) node[circ] {};
 
-% ---- Excute ---- %
+% ---- Execute ---- %
 
 \draw[line data] (DE.east|-REGFILE-RD1) node[above right,signal] {Rs1DataE} -- (MUXRs1Data.blpin 1);
 \draw[line data] (DE.east|-REGFILE-RD2) node[above right,signal] {Rs2DataE} -| (xRs2Data|-MUXRs2Data.blpin 1) -- (MUXRs2Data.blpin 1); 
@@ -427,7 +427,7 @@
 {
     Hazard.west/FD/IF Stage/Fetch/F,
     FD/DE/ID Stage/Decode/D,
-    DE/EM/EX Stage/Excute/E,
+    DE/EM/EX Stage/Execute/E,
     EM/MW/MEM Stage/Memory/M,
     MW/Hazard.east/WB Stage/Writeback/W%
 }

@@ -39,8 +39,8 @@
         类型&状态数&状态转移路径&&&&\\
         I/LOAD&5&S0（Fetch）&S1（Decode）&S2（MemAdr）&S7（MemRead）&S10（MemWB）\\
         S/STORE&4&S0（Fetch）&S1（Decode）&S2（MemAdr）&S8（MemWrite）\\
-        R/OP&4&S0（Fetch）&S1（Decode）&S3（ExcuteR）&S8（ALUWB）\\
-        I/OP-IMM&4&S0（Fetch）&S1（Decode）&S4（ExcuteI）&S8（ALUWB）\\
+        R/OP&4&S0（Fetch）&S1（Decode）&S3（ExecuteR）&S8（ALUWB）\\
+        I/OP-IMM&4&S0（Fetch）&S1（Decode）&S4（ExecuteI）&S8（ALUWB）\\
         J/JAL&4&S0（Fetch）&S1（Decode）&S5（Jump）&S8（ALUWB）\\
         B/BRANCH&3&S0（Fetch）&S1（Decode）&S6（Branch）\\
     \end{tblr}
@@ -99,7 +99,7 @@
         % ----------------%
         \includegraphics[width=0.45\textwidth]{Chapter07C_05.fig.pdf}&
         \includegraphics[width=0.45\textwidth]{Chapter07C_06.fig.pdf}\\*
-        S3 : ExcuteR&S4 : ExcuteI\\
+        S3 : ExecuteR&S4 : ExecuteI\\
         % ----------------%
         \includegraphics[width=0.45\textwidth]{Chapter07C_07.fig.pdf}&
         \includegraphics[width=0.45\textwidth]{Chapter07C_08.fig.pdf}\\*
@@ -128,17 +128,17 @@
 \paragraph{状态S1（Decode）}
 状态S1（Decode）的主要功能是完成指令解码，但同时，它会计算\code{pc+imm}作为假如进行跳转的下一指令地址。首先，指令内容\code{instr}从寄存器\code{Instr}发出，指令各字段被分拆进入不同的单元。扩展字段\code{op,funct3,funct7}进入控制单元，确定后续的状态转移路径，并产生\code{ImmSrc}信号，寄存器字段\code{xrs1,xrs2}进入REGFILE，读出寄存器数据\code{rs1,rs2}并写入寄存器\code{A,B}。立即数字段\code{ximm}进入Extend并在\code{ImmSrc}的控制下产生立即数\code{imm}，不过并没有写入寄存器，但由于整个执行过程中\code{instr}始终有效，故不妨碍。立即数\code{imm}通过MUX到达\code{SrcB}，而同时，\code{pc}从\code{PCCurr}寄存器读出通过MUX到达\code{SrcA}，两者经过ALU得到\code{pc+imm}，该结果会先写入\code{ALUOut}寄存器。当然，对于大部分与跳转无关的指令，该处进行的计算看上去毫无意义，但不妨碍我们先做好准备。若不涉及跳转，后续会抛弃这个结果。
 
-\paragraph{状态S2（MemAdr）、S3（ExcuteR）、S4（ExcuteI）、S5（Jump）、S6（Branch）}
-状态S2（MemAdr）、S3（ExcuteR）、S4（ExcuteI）、S5（Jump）、S6（Branch）是五个平级的状态，它们的共同点是，各自完成了其指令类型中最重要的一次ALU计算
+\paragraph{状态S2（MemAdr）、S3（ExecuteR）、S4（ExecuteI）、S5（Jump）、S6（Branch）}
+状态S2（MemAdr）、S3（ExecuteR）、S4（ExecuteI）、S5（Jump）、S6（Branch）是五个平级的状态，它们的共同点是，各自完成了其指令类型中最重要的一次ALU计算
 
 \begin{itemize}
     \item 状态S2（MemAdr）进行加法计算，得到MEM地址\code{imm(rs1)}。
-    \item 状态S3（ExcuteR）和S4（ExcuteI）对\code{rs1,rs2}或\code{rs1,imm}进行指定的ALU运算。
+    \item 状态S3（ExecuteR）和S4（ExecuteI）对\code{rs1,rs2}或\code{rs1,imm}进行指定的ALU运算。
     \item 状态S5（Jump）进行加法计算，得到用于写回REGFILE的\code{pc+4}。
     \item 状态S6（Branch）进行减法计算，通过\code{rs1-rs2}是否为零判断两者是否相等。
 \end{itemize}
 
-除了S6（Branch）之外，其余的ALU结果都会写入寄存器\code{ALUOut}等待下一周期的使用，其中，我们将S3（ExcuteR）、S4（ExcuteI）、S5（Jump）的ALU结果统一记为\code{rd}，因为这三者的结果最终都是用于写回REGFILE，作为对比，S2（MemAdr）的ALU结果\code{imm(rs1)}则是作为MEM地址。对于S6（Branch），其关注ALU产生的\code{Zero}信号，这会送至控制单元。
+除了S6（Branch）之外，其余的ALU结果都会写入寄存器\code{ALUOut}等待下一周期的使用，其中，我们将S3（ExecuteR）、S4（ExecuteI）、S5（Jump）的ALU结果统一记为\code{rd}，因为这三者的结果最终都是用于写回REGFILE，作为对比，S2（MemAdr）的ALU结果\code{imm(rs1)}则是作为MEM地址。对于S6（Branch），其关注ALU产生的\code{Zero}信号，这会送至控制单元。
 
 在这些状态中，状态S5（Jump）和S6（Branch）还需要额外关心的一点是，是否要用当前周期寄存器\code{ALUOut}存储的跳转地址\code{pc+imm}覆盖寄存器\code{PC}中存储的顺序地址\code{pc+4}。参照控制单元\cref{fig:多周期RISC-V处理器的控制单元}的内部电路，对于状态S6（Branch），状态机输出\code{Branch=1}，当同时收到\code{Zero=1}时更新指令地址。对于状态S5（Jump），状态机输出\code{PCUpdate=1}更新指令地址。值得注意的是，之所以这里\code{PCUpdate}不对应称为\code{Jump}，是因为S0（Fetch）写入\code{pc+4}时也是通过该信号进行的，其本质是进行无条件的指令地址更新，而不仅仅用于跳转时。除此之外，很有趣的是，尽管\code{pc+4}在S0（Fetch）已经被计算，但是S5（Jump）中又计算了一遍\code{pc+4}，作为写回REGFILE的数据。重复计算听上去很愚蠢，但这也同时避免了更多状态的添加。
 
